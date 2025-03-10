@@ -16,6 +16,8 @@ import com.evanmccormick.chessevaluator.ui.auth.LoginScreen
 import com.evanmccormick.chessevaluator.ui.auth.LoginViewModel
 import com.evanmccormick.chessevaluator.ui.dashboard.DashboardScreen
 import com.evanmccormick.chessevaluator.ui.dashboard.DashboardViewModel
+import com.evanmccormick.chessevaluator.ui.evaluation.EvaluationScreen
+import com.evanmccormick.chessevaluator.ui.evaluation.EvaluationViewModel
 import com.evanmccormick.chessevaluator.ui.theme.ChessEvaluatorTheme
 
 class MainActivity : ComponentActivity() {
@@ -58,7 +60,10 @@ fun AppNavigation() {
             )
         }
         composable("play_screen"){
-            //  TODO: Add PlayScreen Implementation
+            val evaluationViewModel: EvaluationViewModel = viewModel()
+            EvaluationScreen(
+                viewModel = evaluationViewModel
+            )
         }
         composable("review_screen"){
             //  TODO: Add ReviewScreen Implementation
