@@ -69,6 +69,9 @@ class EvaluationViewModel : ViewModel() {
         }
     }
 
+    fun evaluatePosition(){
+    }
+
     // Add or remove tags
     fun addTag(tag: String) {
         _evaluationState.update { currentState ->

@@ -11,6 +11,7 @@ composeBom = "2025.02.00"
 firebase-bom = "33.10.0"
 navigation-compose = "2.8.8"
 lifecycle-viewmodel = "2.8.7"
+uiTestAndroid = "1.7.8"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }

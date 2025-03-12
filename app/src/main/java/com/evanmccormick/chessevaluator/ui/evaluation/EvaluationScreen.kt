@@ -1,5 +1,6 @@
 package com.evanmccormick.chessevaluator.ui.evaluation
 
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -14,18 +15,32 @@ import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import com.evanmccormick.chessevaluator.utils.navigation.ScreenWithNavigation
 
 @Composable
 fun EvaluationScreen(
-    viewModel: EvaluationViewModel = viewModel()
+    navController: NavController,
+    viewModel: EvaluationViewModel
+) {
+    ScreenWithNavigation(
+        navController,
+        currentRoute = "play_screen"
+    ) {
+        EvaluationContent(viewModel = viewModel)
+    }
+}
+
+@Composable
+fun EvaluationContent(
+    viewModel: EvaluationViewModel
 ) {
     val evaluationState by viewModel.evaluationState.collectAsState()
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF8E24AA)) // Purple background
+            .background(MaterialTheme.colorScheme.background) // Purple background
     ) {
         // Top Section - Title and instructions
         Column(
@@ -36,14 +51,14 @@ fun EvaluationScreen(
         ) {
             Text(
                 text = "X to move.",
-                color = Color.White,
-                fontSize = 24.sp
+                fontSize = 24.sp,
+                color = Color.Black
             )
             Text(
                 text = "What do you think the evaluation is? (% chance for X to win).",
-                color = Color.White,
                 textAlign = TextAlign.Center,
-                fontSize = 16.sp
+                fontSize = 16.sp,
+                color = Color.Black
             )
         }
 
@@ -140,13 +155,14 @@ fun EvaluationScreen(
         ) {
             Text(
                 text = "Tags",
-                color = Color.White,
+                color = Color.Black,
                 fontSize = 16.sp,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
 
             FlowRow(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 maxItemsInEachRow = 3
             ) {
@@ -159,12 +175,27 @@ fun EvaluationScreen(
 
         Spacer(modifier = Modifier.weight(1f))
 
+        //Button to submit evaluation:
+        Button(
+            onClick = {viewModel.evaluatePosition()},
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+        ){
+            Text(
+                text = "Guess"
+            )
+        }
+
+        Spacer(modifier = Modifier.weight(1f))
+
         // Bottom Navigation Bar Placeholder
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp)
-                .background(Color(0xFF004D40)) // Dark teal color
+                .background(MaterialTheme.colorScheme.secondaryContainer) // Dark teal color
         ) {
             // This is a placeholder for your navbar that will be implemented separately
             Divider(
@@ -172,7 +203,7 @@ fun EvaluationScreen(
                     .align(Alignment.TopCenter)
                     .fillMaxWidth()
                     .height(2.dp),
-                color = Color(0xFF00BFA5) // Teal accent
+                color = MaterialTheme.colorScheme.secondary // Teal accent
             )
         }
     }
@@ -238,12 +269,12 @@ fun Tag(text: String) {
     Surface(
         modifier = Modifier.padding(bottom = 8.dp),
         shape = RoundedCornerShape(16.dp),
-        color = Color(0xFFCE93D8) // Light purple
+        color = MaterialTheme.colorScheme.tertiaryContainer
     ) {
         Text(
             text = text,
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-            color = Color.Black,
+            color = Color.White,
             fontSize = 14.sp
         )
     }

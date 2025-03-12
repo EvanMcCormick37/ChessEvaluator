@@ -46,22 +46,23 @@ fun AppNavigation() {
             LoginScreen(
                 viewModel = loginViewModel,
                 onLoginSuccess = {
-                    navController.navigate("dashboard"){
+                    navController.navigate("dashboard_screen"){
                         popUpTo("login"){ inclusive = true }
                     }
                 }
             )
         }
-        composable("dashboard") {
+        composable("dashboard_screen") {
             val dashboardViewModel: DashboardViewModel = viewModel()
             DashboardScreen(
-                navController = navController,
+                navController,
                 viewModel = dashboardViewModel
             )
         }
         composable("play_screen"){
             val evaluationViewModel: EvaluationViewModel = viewModel()
             EvaluationScreen(
+                navController,
                 viewModel = evaluationViewModel
             )
         }
@@ -76,9 +77,6 @@ fun AppNavigation() {
         }
         composable("settings_screen"){
             //  TODO: Add SettingsScreen implementation
-        }
-        composable("donate_screen"){
-            //  TODO: Add DonateScreen implementation
         }
     }
 }
