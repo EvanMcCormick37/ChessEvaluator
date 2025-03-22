@@ -7,13 +7,6 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavController
 import com.evanmccormick.chessevaluator.ui.components.navigation.AppNavBar
 
-/**
- * A reusable wrapper that adds the app navigation bar to any screen content
- *
- * @param navController The navigation controller for handling navigation between screens
- * @param currentRoute The current route/screen name for highlighting the active nav icon
- * @param content The screen content to be displayed below the navigation bar
- */
 @Composable
 fun ScreenWithNavigation(
     navController: NavController,
@@ -23,12 +16,17 @@ fun ScreenWithNavigation(
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
-        // Top Navigation Bar
+        // Main content
+        Column(
+            modifier = Modifier.weight(1f)
+        ) {
+            content()
+        }
+
+        // Navigation bar at the bottom
         AppNavBar(
-            navController,
-            currentRoute
+            navController = navController,
+            currentRoute = currentRoute
         )
-        //  Screen Content
-        content()
     }
 }

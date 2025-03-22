@@ -1,6 +1,5 @@
 package com.evanmccormick.chessevaluator.ui.evaluation
 
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -10,12 +9,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.evanmccormick.chessevaluator.ui.theme.ExtendedTheme
 import com.evanmccormick.chessevaluator.utils.navigation.ScreenWithNavigation
 
 @Composable
@@ -31,6 +29,7 @@ fun EvaluationScreen(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun EvaluationContent(
     viewModel: EvaluationViewModel
@@ -40,7 +39,7 @@ fun EvaluationContent(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background) // Purple background
+            .background(MaterialTheme.colorScheme.background)
     ) {
         // Top Section - Title and instructions
         Column(
@@ -52,13 +51,13 @@ fun EvaluationContent(
             Text(
                 text = "X to move.",
                 fontSize = 24.sp,
-                color = Color.Black
+                color = MaterialTheme.colorScheme.onBackground
             )
             Text(
                 text = "What do you think the evaluation is? (% chance for X to win).",
                 textAlign = TextAlign.Center,
                 fontSize = 16.sp,
-                color = Color.Black
+                color = MaterialTheme.colorScheme.onBackground
             )
         }
 
@@ -68,14 +67,14 @@ fun EvaluationContent(
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
                 .aspectRatio(1f)
-                .background(Color.LightGray)
+                .background(MaterialTheme.colorScheme.surfaceVariant)
                 .clip(RoundedCornerShape(8.dp)),
             contentAlignment = Alignment.Center
         ) {
             Text(
                 text = "Chess Position Here",
                 fontSize = 18.sp,
-                color = Color.Black
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 
@@ -102,13 +101,13 @@ fun EvaluationContent(
                         modifier = Modifier
                             .weight(evaluationState.sliderPosition)
                             .fillMaxHeight()
-                            .background(Color.Black)
+                            .background(ExtendedTheme.colors.evaluationBlack)
                     )
                     Box(
                         modifier = Modifier
                             .weight(1f - evaluationState.sliderPosition)
                             .fillMaxHeight()
-                            .background(Color.White)
+                            .background(ExtendedTheme.colors.evaluationWhite)
                     )
                 }
 
@@ -120,9 +119,9 @@ fun EvaluationContent(
                         .fillMaxWidth()
                         .alpha(0f), // Make slider invisible but functional
                     colors = SliderDefaults.colors(
-                        thumbColor = Color.Transparent,
-                        activeTrackColor = Color.Transparent,
-                        inactiveTrackColor = Color.Transparent
+                        thumbColor = MaterialTheme.colorScheme.primary,
+                        activeTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0f),
+                        inactiveTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0f)
                     )
                 )
             }
@@ -132,14 +131,13 @@ fun EvaluationContent(
                 value = evaluationState.evaluationText,
                 onValueChange = { viewModel.updateEvaluationText(it) },
                 modifier = Modifier
-                    .width(100.dp)
-                    .background(MaterialTheme.colorScheme.primary),
+                    .width(100.dp),
                 textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Left),
                 singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White,
-                    disabledContainerColor = Color.White,
+                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    disabledContainerColor = MaterialTheme.colorScheme.surface,
                 ),
                 trailingIcon = {
                     Text(text = "%")
@@ -155,7 +153,7 @@ fun EvaluationContent(
         ) {
             Text(
                 text = "Tags",
-                color = Color.Black,
+                color = MaterialTheme.colorScheme.onBackground,
                 fontSize = 16.sp,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
@@ -166,10 +164,9 @@ fun EvaluationContent(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 maxItemsInEachRow = 3
             ) {
-                Tag("Opening")
-                Tag("Closed Position")
-                Tag("Ray Lopez")
-                Tag("Queenless Middlegame")
+                for (tag in evaluationState.tags) {
+                    Tag(tag)
+                }
             }
         }
 
@@ -177,90 +174,18 @@ fun EvaluationContent(
 
         //Button to submit evaluation:
         Button(
-            onClick = {viewModel.evaluatePosition()},
+            onClick = { viewModel.evaluatePosition() },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp),
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-        ){
+        ) {
             Text(
                 text = "Guess"
             )
         }
 
         Spacer(modifier = Modifier.weight(1f))
-
-        // Bottom Navigation Bar Placeholder
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp)
-                .background(MaterialTheme.colorScheme.secondaryContainer) // Dark teal color
-        ) {
-            // This is a placeholder for your navbar that will be implemented separately
-            Divider(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .fillMaxWidth()
-                    .height(2.dp),
-                color = MaterialTheme.colorScheme.secondary // Teal accent
-            )
-        }
-    }
-}
-
-@Composable
-fun FlowRow(
-    modifier: Modifier = Modifier,
-    horizontalArrangement: Arrangement.Horizontal = Arrangement.Start,
-    maxItemsInEachRow: Int = Int.MAX_VALUE,
-    content: @Composable () -> Unit
-) {
-    Layout(
-        content = content,
-        modifier = modifier
-    ) { measurables, constraints ->
-        val rows = mutableListOf<List<androidx.compose.ui.layout.Placeable>>()
-        val itemConstraints = constraints.copy(minWidth = 0)
-
-        var currentRow = mutableListOf<androidx.compose.ui.layout.Placeable>()
-        var currentRowWidth = 0
-        var itemsInCurrentRow = 0
-
-        measurables.forEach { measurable ->
-            val placeable = measurable.measure(itemConstraints)
-
-            if (currentRowWidth + placeable.width > constraints.maxWidth || itemsInCurrentRow >= maxItemsInEachRow) {
-                rows.add(currentRow)
-                currentRow = mutableListOf()
-                currentRowWidth = 0
-                itemsInCurrentRow = 0
-            }
-
-            currentRow.add(placeable)
-            currentRowWidth += placeable.width
-            itemsInCurrentRow++
-        }
-
-        if (currentRow.isNotEmpty()) {
-            rows.add(currentRow)
-        }
-
-        val height = rows.sumOf { row -> row.maxOfOrNull { it.height } ?: 0 } + (rows.size - 1) * 8
-
-        layout(constraints.maxWidth, height) {
-            var y = 0
-
-            rows.forEach { row ->
-                var x = 0
-                row.forEach { placeable ->
-                    placeable.place(x, y)
-                    x += placeable.width + 8
-                }
-                y += row.maxOfOrNull { it.height } ?: 0
-                y += 8 // Add 8.dp spacing between rows
-            }
-        }
     }
 }
 
@@ -269,12 +194,12 @@ fun Tag(text: String) {
     Surface(
         modifier = Modifier.padding(bottom = 8.dp),
         shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.tertiaryContainer
+        color = ExtendedTheme.colors.tagBackground
     ) {
         Text(
             text = text,
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onTertiary,
             fontSize = 14.sp
         )
     }

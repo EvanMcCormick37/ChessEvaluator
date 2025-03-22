@@ -61,7 +61,8 @@ fun DashboardScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(120.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.secondary)
             ) {
                 Text(
                     text = "Review",
@@ -85,7 +86,10 @@ fun DashboardScreen(
                         onClick = { viewModel.navigateTo(DashboardViewModel.NavigationDestination.Profile) },
                         modifier = Modifier
                             .weight(1f)
-                            .height(60.dp)
+                            .height(60.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer
+                        )
                     ) {
                         Text(text = "Profile")
                     }
@@ -94,7 +98,10 @@ fun DashboardScreen(
                         onClick = { viewModel.navigateTo(DashboardViewModel.NavigationDestination.Leaderboard) },
                         modifier = Modifier
                             .weight(1f)
-                            .height(60.dp)
+                            .height(60.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer
+                        )
                     ) {
                         Text(text = "Leaderboard")
                     }
@@ -108,7 +115,10 @@ fun DashboardScreen(
                         onClick = { viewModel.navigateTo(DashboardViewModel.NavigationDestination.Settings) },
                         modifier = Modifier
                             .weight(1f)
-                            .height(60.dp)
+                            .height(60.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer
+                        )
                     ) {
                         Text(text = "Settings")
                     }
@@ -117,7 +127,10 @@ fun DashboardScreen(
                         onClick = { viewModel.navigateTo(DashboardViewModel.NavigationDestination.Donate) },
                         modifier = Modifier
                             .weight(1f)
-                            .height(60.dp)
+                            .height(60.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer
+                        )
                     ) {
                         Text(text = "Donate")
                     }
