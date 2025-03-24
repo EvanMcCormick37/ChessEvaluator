@@ -11,7 +11,7 @@ data class TagEloData(
     val elo: Int
 )
 
-data class ProfileState(
+data class StatsState(
     val currentTimeControlIndex: Int = 2, // Default to 30 seconds (index 2)
     val timeControls: List<String> = listOf("0:05", "0:15", "0:30", "1:00", "2:00", "5:00"),
     val isShowingStrengths: Boolean = true, // True for strengths, false for weaknesses
@@ -22,9 +22,9 @@ data class ProfileState(
     val errorMessage: String? = null
 )
 
-class ProfileViewModel : ViewModel() {
-    private val _state = MutableStateFlow(ProfileState())
-    val state: StateFlow<ProfileState> = _state.asStateFlow()
+class StatsViewModel : ViewModel() {
+    private val _state = MutableStateFlow(StatsState())
+    val state: StateFlow<StatsState> = _state.asStateFlow()
 
     init {
         loadUserStats()

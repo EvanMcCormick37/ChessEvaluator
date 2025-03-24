@@ -37,6 +37,14 @@ val White = Color(0xFFFFFFFF)
 val LightGray = Color(0xFFF0F0F0)
 val DarkGray = Color(0xFF424242)
 
+// Leaderboard specific colors
+val LeaderboardHeaderBg = DarkTeal
+val LeaderboardGold = Color(0xFFFFD700)
+val LeaderboardSilver = Color(0xFFC0C0C0)
+val LeaderboardBronze = Color(0xFFCD7F32)
+val DarkRowBg = Color(0xFF2C2C2C)
+val DarkerRowBg = Color(0xFF1E1E1E)
+
 // Dark theme color scheme
 private val DarkColorScheme = darkColorScheme(
     primary = MediumTeal,
@@ -93,7 +101,14 @@ data class ExtendedColors(
     val evaluationSliderThumb: Color = MediumPurple,
     val evaluationBlack: Color = Black,
     val evaluationWhite: Color = White,
-    val tagBackground: Color = DarkAccent
+    val tagBackground: Color = DarkAccent,
+    // Leaderboard specific colors
+    val leaderboardHeaderBg: Color = LeaderboardHeaderBg,
+    val goldMedal: Color = LeaderboardGold,
+    val silverMedal: Color = LeaderboardSilver,
+    val bronzeMedal: Color = LeaderboardBronze,
+    val rowBackgroundEven: Color = DarkRowBg,
+    val rowBackgroundOdd: Color = DarkerRowBg
 )
 
 // Local composition to provide the extended colors
@@ -120,12 +135,16 @@ fun ChessEvaluatorTheme(
     val extendedColors = if (darkTheme) {
         ExtendedColors(
             navBarColor = DarkTeal,
-            tagBackground = DarkAccent
+            tagBackground = DarkAccent,
+            rowBackgroundEven = DarkRowBg,
+            rowBackgroundOdd = DarkerRowBg
         )
     } else {
         ExtendedColors(
             navBarColor = MediumTeal,
-            tagBackground = LightAccent
+            tagBackground = LightAccent,
+            rowBackgroundEven = LightGray,
+            rowBackgroundOdd = White
         )
     }
 

@@ -10,6 +10,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Person
@@ -17,7 +18,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.evanmccormick.chessevaluator.ui.theme.ExtendedTheme
 import com.evanmccormick.chessevaluator.utils.navigation.ScreenWithNavigation
 import kotlinx.coroutines.launch
 
@@ -62,7 +63,7 @@ fun LeaderboardScreen(
                 ) {
                     Text(
                         text = "Leaderboard",
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onPrimary,
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(16.dp)
@@ -151,13 +152,13 @@ fun LeaderboardContent(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(color = Color(0xFF004D40))
+                    .background(color = ExtendedTheme.colors.leaderboardHeaderBg)
                     .padding(vertical = 16.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = tab.title,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onPrimary,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -170,11 +171,7 @@ fun LeaderboardContent(
                 itemsIndexed(tab.entries) { index, entry ->
                     LeaderboardEntryRow(
                         entry = entry,
-                        backgroundColor = when {
-                            entry.isCurrentUser -> MaterialTheme.colorScheme.primaryContainer
-                            index % 2 == 0 -> Color(0xFFF0F0F0)
-                            else -> Color.White
-                        }
+                        index = index
                     )
                 }
             }
@@ -186,11 +183,11 @@ fun LeaderboardContent(
                 .align(Alignment.BottomStart)
                 .padding(16.dp)
         ) {
-            FilledTonalButton(
+            Button(
                 onClick = onFindMe,
-                shape = CircleShape,
-                colors = ButtonDefaults.filledTonalButtonColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.secondary
                 )
             ) {
                 Icon(
@@ -207,8 +204,23 @@ fun LeaderboardContent(
 @Composable
 fun LeaderboardEntryRow(
     entry: LeaderboardEntry,
-    backgroundColor: Color
+    index: Int
 ) {
+    // Determine background color based on whether it's an odd or even row
+    val backgroundColor = when {
+        entry.isCurrentUser -> MaterialTheme.colorScheme.primaryContainer
+        index % 2 == 0 -> ExtendedTheme.colors.rowBackgroundEven
+        else -> ExtendedTheme.colors.rowBackgroundOdd
+    }
+
+    // Special colors for medal positions
+    val rankColor = when (entry.rank) {
+        1 -> ExtendedTheme.colors.goldMedal
+        2 -> ExtendedTheme.colors.silverMedal
+        3 -> ExtendedTheme.colors.bronzeMedal
+        else -> MaterialTheme.colorScheme.onSurface
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -221,12 +233,7 @@ fun LeaderboardEntryRow(
             text = "#${entry.rank}",
             fontWeight = FontWeight.Bold,
             fontSize = 16.sp,
-            color = when (entry.rank) {
-                1 -> Color(0xFFFFD700) // Gold
-                2 -> Color(0xFFC0C0C0) // Silver
-                3 -> Color(0xFFCD7F32) // Bronze
-                else -> MaterialTheme.colorScheme.onSurface
-            },
+            color = rankColor,
             modifier = Modifier.width(48.dp)
         )
 
@@ -235,6 +242,7 @@ fun LeaderboardEntryRow(
             text = entry.name,
             fontWeight = if (entry.isCurrentUser) FontWeight.Bold else FontWeight.Normal,
             fontSize = 16.sp,
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.weight(1f)
         )
 
@@ -243,6 +251,7 @@ fun LeaderboardEntryRow(
             text = entry.elo.toString(),
             fontWeight = FontWeight.Bold,
             fontSize = 16.sp,
+            color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.End,
             modifier = Modifier.width(60.dp)
         )

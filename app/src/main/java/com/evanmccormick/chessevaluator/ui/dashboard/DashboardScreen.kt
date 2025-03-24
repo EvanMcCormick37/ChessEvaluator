@@ -1,6 +1,7 @@
 package com.evanmccormick.chessevaluator.ui.dashboard
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -21,7 +22,7 @@ fun DashboardScreen(
             when (destination) {
                 is DashboardViewModel.NavigationDestination.Play -> navController.navigate("play_screen")
                 is DashboardViewModel.NavigationDestination.Review -> navController.navigate("review_screen")
-                is DashboardViewModel.NavigationDestination.Profile -> navController.navigate("profile_screen")
+                is DashboardViewModel.NavigationDestination.Stats -> navController.navigate("stats_screen")
                 is DashboardViewModel.NavigationDestination.Leaderboard -> navController.navigate("leaderboard_screen")
                 is DashboardViewModel.NavigationDestination.Settings -> navController.navigate("settings_screen")
                 is DashboardViewModel.NavigationDestination.Donate -> navController.navigate("donate_screen")
@@ -45,6 +46,7 @@ fun DashboardScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(120.dp),
+                shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
                 Text(
@@ -61,6 +63,7 @@ fun DashboardScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(120.dp),
+                shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.secondary)
             ) {
@@ -73,7 +76,7 @@ fun DashboardScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Secondary smaller buttons (Profile, Leaderboard, Settings, Donate)
+            // Secondary smaller buttons (Stats, Leaderboard, Settings, Donate)
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -82,23 +85,25 @@ fun DashboardScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    OutlinedButton(
-                        onClick = { viewModel.navigateTo(DashboardViewModel.NavigationDestination.Profile) },
+                    Button(
+                        onClick = { viewModel.navigateTo(DashboardViewModel.NavigationDestination.Stats) },
                         modifier = Modifier
                             .weight(1f)
                             .height(60.dp),
+                        shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.secondaryContainer
                         )
                     ) {
-                        Text(text = "Profile")
+                        Text(text = "Stats")
                     }
 
-                    OutlinedButton(
+                    Button(
                         onClick = { viewModel.navigateTo(DashboardViewModel.NavigationDestination.Leaderboard) },
                         modifier = Modifier
                             .weight(1f)
                             .height(60.dp),
+                        shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.secondaryContainer
                         )
@@ -111,11 +116,12 @@ fun DashboardScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    OutlinedButton(
+                    Button(
                         onClick = { viewModel.navigateTo(DashboardViewModel.NavigationDestination.Settings) },
                         modifier = Modifier
                             .weight(1f)
                             .height(60.dp),
+                        shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.secondaryContainer
                         )
@@ -123,11 +129,12 @@ fun DashboardScreen(
                         Text(text = "Settings")
                     }
 
-                    OutlinedButton(
+                    Button(
                         onClick = { viewModel.navigateTo(DashboardViewModel.NavigationDestination.Donate) },
                         modifier = Modifier
                             .weight(1f)
                             .height(60.dp),
+                        shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.secondaryContainer
                         )

@@ -6,15 +6,13 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
-import androidx.compose.ui.draw.rotate
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -39,19 +37,10 @@ fun SettingsContent(viewModel: SettingsViewModel) {
     val scrollState = rememberScrollState()
 
     // Get current color scheme based on settings
-    val backgroundColor = MaterialTheme.colorScheme.primary
-    val containerColor = if (settings.darkMode) {
-        Color(0xFF004D40) // Dark teal background for dark mode
-    } else {
-        Color(0xFF80CBC4) // Light teal background for light mode
-    }
-
-    val textColor = if (settings.darkMode) Color.White else Color.Black
-    val textFieldBackgroundColor = if (settings.darkMode) {
-        Color(0xFF880E4F) // Dark accent for dark mode
-    } else {
-        Color(0xFFD81B60) // Light accent for light mode
-    }
+    val backgroundColor = MaterialTheme.colorScheme.background
+    val containerColor = MaterialTheme.colorScheme.background
+    val textColor = MaterialTheme.colorScheme.onSurface
+    val textFieldBackgroundColor = MaterialTheme.colorScheme.primaryContainer
 
     Box(
         modifier = Modifier
@@ -65,18 +54,10 @@ fun SettingsContent(viewModel: SettingsViewModel) {
                     color = containerColor,
                     shape = RoundedCornerShape(0.dp)
                 )
-                .padding(16.dp)
+                .padding(14.dp)
                 .verticalScroll(scrollState),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Settings Title
-            Text(
-                text = "Settings",
-                fontSize = 36.sp,
-                color = textColor,
-                modifier = Modifier.padding(vertical = 24.dp)
-            )
-
             // Profile Settings Section
             SettingsSection(title = "Profile Settings", textColor = textColor) {
                 // Username Setting
@@ -88,7 +69,7 @@ fun SettingsContent(viewModel: SettingsViewModel) {
                             value = settings.username,
                             onValueChange = { viewModel.updateUsername(it) },
                             modifier = Modifier
-                                .height(48.dp)
+                                .height(56.dp) // Increased height
                                 .width(120.dp),
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedContainerColor = textFieldBackgroundColor,
@@ -143,72 +124,6 @@ fun SettingsContent(viewModel: SettingsViewModel) {
 
             // Evaluation Settings Section
             SettingsSection(title = "Evaluation Settings", textColor = textColor) {
-                // Timer Setting
-                SettingRow(
-                    label = "Timer",
-                    textColor = textColor,
-                    content = {
-                        Box(
-                            modifier = Modifier
-                                .height(48.dp)
-                                .width(80.dp)
-                                .background(
-                                    color = textFieldBackgroundColor,
-                                    shape = RoundedCornerShape(4.dp)
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                // Up arrow (only shown if not at max)
-                                if (!viewModel.isMaxTimerSelected()) {
-                                    IconButton(
-                                        onClick = { viewModel.incrementTimer() },
-                                        modifier = Modifier.size(16.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Add,
-                                            contentDescription = "Increase Timer",
-                                            tint = textColor,
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                    }
-                                } else {
-                                    Spacer(modifier = Modifier.height(16.dp))
-                                }
-
-                                // Timer display
-                                Text(
-                                    text = settings.timerOption.display,
-                                    color = textColor,
-                                    fontWeight = FontWeight.Bold
-                                )
-
-                                // Down arrow (only shown if not at min)
-                                if (!viewModel.isMinTimerSelected()) {
-                                    IconButton(
-                                        onClick = { viewModel.decrementTimer() },
-                                        modifier = Modifier.size(16.dp)
-                                    ) {
-                                        // Rotate Add icon to make it a minus or use a different icon
-                                        Icon(
-                                            imageVector = Icons.Default.Add,
-                                            contentDescription = "Decrease Timer",
-                                            tint = textColor,
-                                            modifier = Modifier
-                                                .size(16.dp)
-                                                .rotate(180f)
-                                        )
-                                    }
-                                } else {
-                                    Spacer(modifier = Modifier.height(16.dp))
-                                }
-                            }
-                        }
-                    }
-                )
-
                 // Eval Type Setting
                 SettingRow(
                     label = "Eval",
@@ -241,7 +156,7 @@ fun SettingsContent(viewModel: SettingsViewModel) {
                                 value = settings.currentTag,
                                 onValueChange = { viewModel.updateCurrentTag(it) },
                                 modifier = Modifier
-                                    .height(48.dp)
+                                    .height(56.dp) // Increased height
                                     .width(140.dp),
                                 colors = OutlinedTextFieldDefaults.colors(
                                     focusedContainerColor = textFieldBackgroundColor,
@@ -261,10 +176,11 @@ fun SettingsContent(viewModel: SettingsViewModel) {
                                     .padding(start = 8.dp)
                                     .size(24.dp)
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.Add,
-                                    contentDescription = "Add Tag",
-                                    tint = textColor
+                                Text(
+                                    text = "+",
+                                    color = textColor,
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold
                                 )
                             }
                         }
@@ -360,7 +276,8 @@ fun ToggleSegmentedButton(
     selectedOption: String,
     onOptionSelected: (String) -> Unit,
     textColor: Color,
-    backgroundColor: Color
+    backgroundColor: Color,
+    minWidth: Dp = 40.dp
 ) {
     Row(
         modifier = Modifier
@@ -372,6 +289,7 @@ fun ToggleSegmentedButton(
             Box(
                 modifier = Modifier
                     .height(36.dp)
+                    .widthIn(min = minWidth)
                     .background(
                         color = if (isSelected) backgroundColor else Color.Transparent,
                         shape = RoundedCornerShape(4.dp)

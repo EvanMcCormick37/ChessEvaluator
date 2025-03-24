@@ -23,8 +23,8 @@ import com.evanmccormick.chessevaluator.ui.evaluation.EvaluationScreen
 import com.evanmccormick.chessevaluator.ui.evaluation.EvaluationViewModel
 import com.evanmccormick.chessevaluator.ui.leaderboard.LeaderboardViewModel
 import com.evanmccormick.chessevaluator.ui.leaderboard.LeaderboardScreen
-import com.evanmccormick.chessevaluator.ui.profile.ProfileScreen
-import com.evanmccormick.chessevaluator.ui.profile.ProfileViewModel
+import com.evanmccormick.chessevaluator.ui.profile.StatsScreen
+import com.evanmccormick.chessevaluator.ui.profile.StatsViewModel
 import com.evanmccormick.chessevaluator.ui.settings.SettingsViewModel
 import com.evanmccormick.chessevaluator.ui.settings.SettingsScreen
 import com.evanmccormick.chessevaluator.ui.theme.ChessEvaluatorTheme
@@ -86,11 +86,11 @@ fun AppNavigation() {
                 viewModel = evaluationViewModel
             )
         }
-        composable("profile_screen"){
-            val profileViewModel: ProfileViewModel = viewModel()
-            ProfileScreen(
+        composable("stats_screen"){
+            val statsViewModel: StatsViewModel = viewModel()
+            StatsScreen(
                 navController,
-                profileViewModel
+                statsViewModel
             )
         }
         composable("leaderboard_screen"){

@@ -31,12 +31,12 @@ fun AppNavBar(
         verticalAlignment = Alignment.CenterVertically
     ) {
         //  Profile Icon
-        if (currentRoute != "profile_screen") {
+        if (currentRoute != "stats_screen") {
             NavBarIcon(
                 icon = Icons.Filled.AccountCircle,
-                contentDescription = "Profile",
+                contentDescription = "Stats",
                 onClick = {
-                    navController.navigate("profile_screen"){
+                    navController.navigate("stats_screen"){
                         launchSingleTop = true
                         restoreState = true
                     }

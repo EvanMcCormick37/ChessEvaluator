@@ -19,7 +19,7 @@ class DashboardViewModel : ViewModel() {
     sealed class NavigationDestination {
         object Play : NavigationDestination()
         object Review : NavigationDestination()
-        object Profile : NavigationDestination()
+        object Stats : NavigationDestination()
         object Leaderboard : NavigationDestination()
         object Settings : NavigationDestination()
         object Donate : NavigationDestination()
