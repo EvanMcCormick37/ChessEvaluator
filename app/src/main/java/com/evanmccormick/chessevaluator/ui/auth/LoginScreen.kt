@@ -1,18 +1,15 @@
 package com.evanmccormick.chessevaluator.ui.auth
 
+import android.app.Activity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -24,11 +21,29 @@ fun LoginScreen(
     onLoginSuccess: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val webClientId = "797519855076-ejnfcsh3s91e7tgtug3dv91j7nvhkit6.apps.googleusercontent.com"
+
+    val googleSignInLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            viewModel.handleGoogleSignInResult(result.data)
+        } else {
+            viewModel.clearSignInIntent()
+        }
+    }
 
     // Check if user is logged in
     LaunchedEffect(uiState.isLoggedIn) {
         if (uiState.isLoggedIn) {
             onLoginSuccess()
+        }
+    }
+
+    LaunchedEffect(uiState.signInIntent) {
+        uiState.signInIntent?.let {
+            googleSignInLauncher.launch(it)
+            viewModel.clearSignInIntent()
         }
     }
 
@@ -60,7 +75,7 @@ fun LoginScreen(
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(24.dp)
+                verticalArrangement = Arrangement.Center
             ) {
                 // App Title
                 Text(
@@ -78,55 +93,11 @@ fun LoginScreen(
                     textAlign = TextAlign.Center
                 )
 
-                Spacer(modifier = Modifier.height(32.dp))
-
-                // Email input
-                OutlinedTextField(
-                    value = uiState.email,
-                    onValueChange = { viewModel.onEmailChange(it) },
-                    label = { Text("Email") },
-                    leadingIcon = {
-                        Icon(Icons.Default.Email, contentDescription = "Email")
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                    singleLine = true
-                )
-
-                // Password input
-                OutlinedTextField(
-                    value = uiState.password,
-                    onValueChange = { viewModel.onPasswordChange(it) },
-                    label = { Text("Password") },
-                    leadingIcon = {
-                        Icon(Icons.Default.Lock, contentDescription = "Password")
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    singleLine = true
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Login Button
-                Button(
-                    onClick = { viewModel.onLoginClick() },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text(
-                        text = "Log in with Email",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+                Spacer(modifier = Modifier.height(64.dp))
 
                 // Google Sign-In Button
-                OutlinedButton(
-                    onClick = { viewModel.onGoogleSignInClick() },
+                Button(
+                    onClick = { viewModel.onGoogleSignInClick(webClientId) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
@@ -136,20 +107,12 @@ fun LoginScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        // Google icon would go here in a real app
                         Text(
                             text = "Sign in with Google",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Medium
                         )
                     }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Register text
-                TextButton(onClick = { /* Navigate to registration */ }) {
-                    Text("Don't have an account? Sign up")
                 }
             }
         }
