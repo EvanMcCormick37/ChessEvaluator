@@ -39,6 +39,71 @@ class LoginViewModel : ViewModel() {
         }
     }
 
+    // Email/Password Sign In
+    fun signInWithEmailAndPassword(email: String, password: String) {
+        if (email.isBlank() || password.isBlank()) {
+            _uiState.update { it.copy(errorMessage = "Email and password cannot be empty") }
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+
+                auth.signInWithEmailAndPassword(email, password).await()
+
+                _uiState.update { it.copy(isLoggedIn = true, isLoading = false) }
+            } catch (e: Exception) {
+                val errorMessage = when {
+                    e.message?.contains("wrong password", ignoreCase = true) == true ->
+                        "Incorrect password"
+                    e.message?.contains("no user record", ignoreCase = true) == true ->
+                        "No account found with this email"
+                    e.message?.contains("badly formatted", ignoreCase = true) == true ->
+                        "Invalid email format"
+                    else -> e.message ?: "Authentication failed"
+                }
+
+                _uiState.update { it.copy(errorMessage = errorMessage, isLoading = false) }
+            }
+        }
+    }
+
+    // Email/Password Sign Up
+    fun createUserWithEmailAndPassword(email: String, password: String) {
+        if (email.isBlank() || password.isBlank()) {
+            _uiState.update { it.copy(errorMessage = "Email and password cannot be empty") }
+            return
+        }
+
+        if (password.length < 6) {
+            _uiState.update { it.copy(errorMessage = "Password must be at least 6 characters") }
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+
+                auth.createUserWithEmailAndPassword(email, password).await()
+
+                _uiState.update { it.copy(isLoggedIn = true, isLoading = false) }
+            } catch (e: Exception) {
+                val errorMessage = when {
+                    e.message?.contains("email address is already", ignoreCase = true) == true ->
+                        "This email is already in use"
+                    e.message?.contains("badly formatted", ignoreCase = true) == true ->
+                        "Invalid email format"
+                    e.message?.contains("weak password", ignoreCase = true) == true ->
+                        "Password is too weak"
+                    else -> e.message ?: "Account creation failed"
+                }
+
+                _uiState.update { it.copy(errorMessage = errorMessage, isLoading = false) }
+            }
+        }
+    }
+
     fun createGoogleSignInClient(webClientId: String): GoogleSignInClient {
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestIdToken(webClientId)
