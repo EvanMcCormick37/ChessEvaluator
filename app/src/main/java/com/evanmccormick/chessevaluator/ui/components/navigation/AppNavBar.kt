@@ -69,19 +69,6 @@ fun AppNavBar(
                 }
             )
         }
-        //  Play Icon
-        if(currentRoute != "play_screen") {
-            NavBarIcon(
-                icon = Icons.Filled.PlayArrow,
-                contentDescription = "Play",
-                onClick = {
-                    navController.navigate("play_screen") {
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                }
-            )
-        }
         //  Leaderboard Icon
         if(currentRoute != "leaderboard_screen") {
             NavBarIcon(

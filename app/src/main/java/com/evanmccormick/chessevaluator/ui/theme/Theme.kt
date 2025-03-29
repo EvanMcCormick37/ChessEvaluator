@@ -37,6 +37,9 @@ val White = Color(0xFFFFFFFF)
 val LightGray = Color(0xFFF0F0F0)
 val DarkGray = Color(0xFF424242)
 
+val LightSquare = Color(0xffe9f2f2)
+val DarkSquare = Color(0xff0f7d7d)
+
 // Leaderboard specific colors
 val LeaderboardHeaderBg = DarkTeal
 val LeaderboardGold = Color(0xFFFFD700)
@@ -95,8 +98,8 @@ private val LightColorScheme = lightColorScheme(
 
 // Custom extended colors that aren't part of Material3 ColorScheme
 data class ExtendedColors(
-    val chessBlack: Color = Black,
-    val chessWhite: Color = White,
+    val chessBlack: Color = LightSquare,
+    val chessWhite: Color = DarkSquare,
     val navBarColor: Color = DarkTeal,
     val evaluationSliderThumb: Color = MediumPurple,
     val evaluationBlack: Color = Black,

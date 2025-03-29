@@ -166,7 +166,7 @@ fun LoginScreen(
                         colors = ButtonDefaults.outlinedButtonColors(
                             containerColor = if (isSignUp) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.secondaryContainer,
                             contentColor = if (isSignUp) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSecondaryContainer,
-                            )
+                        )
                     ) {
                         Text(
                             text = if (isSignUp) "Back to Sign In" else "Create Account",
@@ -204,6 +204,26 @@ fun LoginScreen(
                             fontWeight = FontWeight.Medium
                         )
                     }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Continue as Guest Button
+                OutlinedButton(
+                    onClick = { viewModel.continueAsGuest() },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Text(
+                        text = "Continue as Guest",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium
+                    )
                 }
             }
         }

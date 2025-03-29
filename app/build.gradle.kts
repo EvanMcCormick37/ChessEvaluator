@@ -65,12 +65,14 @@ dependencies {
     // Navigation
     implementation(libs.androidx.navigation.compose)
 
+    // Chess
+    implementation("com.github.bhlangonijr:chesslib:1.3.4")
+
     // Firebase
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth.ktx)
     implementation(libs.firebase.firestore.ktx)
     implementation(libs.play.services.auth)
-
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

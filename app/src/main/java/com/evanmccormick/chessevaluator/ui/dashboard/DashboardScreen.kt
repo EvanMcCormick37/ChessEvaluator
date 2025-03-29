@@ -20,8 +20,7 @@ fun DashboardScreen(
     LaunchedEffect(key1 = true){
         viewModel.navigationEvent.collect { destination ->
             when (destination) {
-                is DashboardViewModel.NavigationDestination.Play -> navController.navigate("play_screen")
-                is DashboardViewModel.NavigationDestination.Review -> navController.navigate("review_screen")
+                is DashboardViewModel.NavigationDestination.Eval -> navController.navigate("eval_screen/${destination.timeControlDuration}")
                 is DashboardViewModel.NavigationDestination.Stats -> navController.navigate("stats_screen")
                 is DashboardViewModel.NavigationDestination.Leaderboard -> navController.navigate("leaderboard_screen")
                 is DashboardViewModel.NavigationDestination.Settings -> navController.navigate("settings_screen")
@@ -41,38 +40,11 @@ fun DashboardScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {// Main large buttons (Play and Review)
-            Button(
-                onClick = { viewModel.navigateTo(DashboardViewModel.NavigationDestination.Play) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(120.dp),
-                shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-            ) {
-                Text(
-                    text = "Play",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            Spacer( modifier = Modifier.height(16.dp))
-
-            Button(
-                onClick = { viewModel.navigateTo(DashboardViewModel.NavigationDestination.Review) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(120.dp),
-                shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.secondary)
-            ) {
-                Text(
-                    text = "Review",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
+            EvalButton(
+                text = "Play",
+                onClick = { selectedTimeControl ->
+                    viewModel.navigateToEvalWithTimeControl(selectedTimeControl) }
+            )
 
             Spacer(modifier = Modifier.height(32.dp))
 

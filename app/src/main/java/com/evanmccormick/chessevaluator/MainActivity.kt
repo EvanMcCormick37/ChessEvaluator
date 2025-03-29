@@ -9,18 +9,22 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.evanmccormick.chessevaluator.ui.auth.LoginScreen
 import com.evanmccormick.chessevaluator.ui.auth.LoginViewModel
 import com.evanmccormick.chessevaluator.ui.dashboard.DashboardScreen
 import com.evanmccormick.chessevaluator.ui.dashboard.DashboardViewModel
 import com.evanmccormick.chessevaluator.ui.evaluation.EvaluationScreen
 import com.evanmccormick.chessevaluator.ui.evaluation.EvaluationViewModel
+import com.evanmccormick.chessevaluator.ui.evaluation.TimeControl
 import com.evanmccormick.chessevaluator.ui.leaderboard.LeaderboardViewModel
 import com.evanmccormick.chessevaluator.ui.leaderboard.LeaderboardScreen
 import com.evanmccormick.chessevaluator.ui.profile.StatsScreen
@@ -72,8 +76,18 @@ fun AppNavigation() {
                 viewModel = dashboardViewModel
             )
         }
-        composable("play_screen"){
+        composable("eval_screen/{timeControlDuration}",
+            arguments = listOf(navArgument("timeControlDuration") { type = NavType.IntType })
+        ){ backStackEntry ->
+            val timeControlDuration = backStackEntry.arguments?.getInt("timeControlDuration")
             val evaluationViewModel: EvaluationViewModel = viewModel()
+
+            LaunchedEffect(Unit) {
+                val timeControl = TimeControl.allOptions.find {
+                    it.durationSeconds == timeControlDuration
+                }
+                evaluationViewModel.setTimeControl(timeControl)
+            }
             EvaluationScreen(
                 navController,
                 viewModel = evaluationViewModel

@@ -25,7 +25,8 @@ class LoginViewModel : ViewModel() {
         val isLoading: Boolean = false,
         val errorMessage: String? = null,
         val isLoggedIn: Boolean = false,
-        val signInIntent: Intent? = null
+        val signInIntent: Intent? = null,
+        val isGuestUser: Boolean = false
     )
 
     private val _uiState = MutableStateFlow(LoginUiState())
@@ -100,6 +101,34 @@ class LoginViewModel : ViewModel() {
                 }
 
                 _uiState.update { it.copy(errorMessage = errorMessage, isLoading = false) }
+            }
+        }
+    }
+
+    // Function to handle continuing as a guest
+    fun continueAsGuest() {
+        viewModelScope.launch {
+            try {
+                _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+
+                // Sign in anonymously with Firebase
+                auth.signInAnonymously().await()
+
+                // Mark as logged in and as a guest user
+                _uiState.update {
+                    it.copy(
+                        isLoggedIn = true,
+                        isGuestUser = true,
+                        isLoading = false
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        errorMessage = e.message ?: "Failed to continue as guest",
+                        isLoading = false
+                    )
+                }
             }
         }
     }
