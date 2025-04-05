@@ -55,6 +55,12 @@ fun HeaderContent(
                 )
 
                 Text(
+                    text = "Your evaluation: ${String.format("%.2f",evaluationState.userEvaluation)}",
+                    fontSize = 16.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Text(
                     text = if (evaluationDifference > 0) "You were off by ${String.format("%.2f", evaluationDifference)}." else "You are correct!",
                     fontSize = 16.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -67,7 +73,7 @@ fun HeaderContent(
                     color = MaterialTheme.colorScheme.onBackground
                 )
                 Text(
-                    text = "What do you think the evaluation is? (% chance for $sideToMoveText to win).",
+                    text = "What do you think the evaluation is?",
                     textAlign = TextAlign.Center,
                     fontSize = 16.sp,
                     color = MaterialTheme.colorScheme.onBackground

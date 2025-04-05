@@ -2,14 +2,15 @@ package com.evanmccormick.chessevaluator.ui.leaderboard
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -44,6 +45,24 @@ fun LeaderboardScreen(
         viewModel.changeTab(pagerState.currentPage)
     }
 
+    // Show dialog for errors
+    if (state.errorMessage != null) {
+        AlertDialog(
+            onDismissRequest = {
+                viewModel.dismissError()
+            },
+            title = { Text("Error") },
+            text = { Text(state.errorMessage ?: "An error occurred") },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.dismissError()
+                }) {
+                    Text("OK")
+                }
+            }
+        )
+    }
+
     ScreenWithNavigation(
         navController = navController,
         currentRoute = "leaderboard_screen"
@@ -70,8 +89,8 @@ fun LeaderboardScreen(
                     )
                 }
 
-                // Tab Row for Time Controls
                 if (state.tabs.isNotEmpty()) {
+                    // Tab Row for Time Controls
                     ScrollableTabRow(
                         selectedTabIndex = pagerState.currentPage,
                         edgePadding = 16.dp,
@@ -104,32 +123,38 @@ fun LeaderboardScreen(
                     ) { page ->
                         LeaderboardContent(
                             tab = state.tabs[page],
-                            onFindMe = { viewModel.findMe() }
+                            onFindMe = { viewModel.findMe() },
+                            isLoading = state.isLoading && page == state.currentTabIndex
                         )
                     }
 
                     // Tag Filter Bar
                     TagFilterBar(
                         selectedTags = state.selectedTags,
-                        onAddTag = { /* Will be implemented later */ },
+                        availableTags = state.availableTags,
+                        onAddTag = { viewModel.showTagSelector() },
                         onRemoveTag = { viewModel.removeTag(it) }
                     )
+
+                    // Tag selector dialog
+                    if (state.showTagSelector) {
+                        TagSelectorDialog(
+                            availableTags = state.availableTags.filter { tag ->
+                                !state.selectedTags.contains(tag)
+                            },
+                            onTagSelected = { tag ->
+                                viewModel.addTag(tag)
+                                viewModel.hideTagSelector()
+                            },
+                            onDismiss = { viewModel.hideTagSelector() }
+                        )
+                    }
                 } else if (state.isLoading) {
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
                         CircularProgressIndicator()
-                    }
-                } else if (state.errorMessage != null) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = state.errorMessage!!,
-                            color = MaterialTheme.colorScheme.error
-                        )
                     }
                 }
             }
@@ -140,7 +165,8 @@ fun LeaderboardScreen(
 @Composable
 fun LeaderboardContent(
     tab: LeaderboardTab,
-    onFindMe: () -> Unit
+    onFindMe: () -> Unit,
+    isLoading: Boolean
 ) {
     Box(
         modifier = Modifier.fillMaxSize()
@@ -164,15 +190,54 @@ fun LeaderboardContent(
                 )
             }
 
-            // Leaderboard entries
-            LazyColumn(
-                modifier = Modifier.weight(1f)
-            ) {
-                itemsIndexed(tab.entries) { index, entry ->
-                    LeaderboardEntryRow(
-                        entry = entry,
-                        index = index
+            // Loading indicator or leaderboard entries
+            if (isLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            } else if (tab.entries.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "No entries found",
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
+                }
+            } else {
+                // Find the index of the current user
+                val currentUserIndex = tab.entries.indexOfFirst { it.isCurrentUser }
+                val listState = rememberLazyListState()
+
+                // Scroll to user's position if "Find Me" was pressed
+                LaunchedEffect(currentUserIndex) {
+                    if (currentUserIndex >= 0) {
+                        listState.animateScrollToItem(
+                            index = currentUserIndex,
+                            scrollOffset = -100 // Offset to position the item more centrally
+                        )
+                    }
+                }
+
+                // Leaderboard entries
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    itemsIndexed(tab.entries) { index, entry ->
+                        LeaderboardEntryRow(
+                            entry = entry,
+                            index = index
+                        )
+                    }
                 }
             }
         }
@@ -261,6 +326,7 @@ fun LeaderboardEntryRow(
 @Composable
 fun TagFilterBar(
     selectedTags: List<String>,
+    availableTags: List<String>,
     onAddTag: () -> Unit,
     onRemoveTag: (String) -> Unit
 ) {
@@ -298,15 +364,63 @@ fun TagFilterBar(
             }
         }
 
-        IconButton(
-            onClick = onAddTag,
-            modifier = Modifier.size(32.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = "Add Tag",
-                tint = MaterialTheme.colorScheme.primary
-            )
+        // Only show the add button if there are available tags not yet selected
+        if (availableTags.any { !selectedTags.contains(it) }) {
+            IconButton(
+                onClick = onAddTag,
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Add Tag",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
         }
     }
+}
+
+@Composable
+fun TagSelectorDialog(
+    availableTags: List<String>,
+    onTagSelected: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Select a Tag") },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
+            ) {
+                availableTags.forEach { tag ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onTagSelected(tag) }
+                            .padding(vertical = 12.dp, horizontal = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = tag,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    if (availableTags.indexOf(tag) < availableTags.size - 1) {
+                        HorizontalDivider(
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
+                            thickness = 0.5.dp
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }

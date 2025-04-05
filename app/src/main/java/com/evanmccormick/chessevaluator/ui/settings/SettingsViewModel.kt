@@ -3,6 +3,9 @@ package com.evanmccormick.chessevaluator.ui.settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.evanmccormick.chessevaluator.ui.theme.ThemeController
+import com.evanmccormick.chessevaluator.ui.utils.db.DatabaseManager
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -44,6 +47,11 @@ class SettingsViewModel : ViewModel() {
     // Exposed as immutable StateFlow
     val settings: StateFlow<SettingsState> = _settings.asStateFlow()
 
+    // Database Handling
+    val auth = FirebaseAuth.getInstance()
+    val db = FirebaseFirestore.getInstance()
+    val dbManager = DatabaseManager(auth, db)
+
     init {
         // Initialize the settings with the current theme
         viewModelScope.launch {
@@ -56,6 +64,16 @@ class SettingsViewModel : ViewModel() {
     fun updateUsername(username: String) {
         _settings.update { currentState ->
             currentState.copy(username = username)
+        }
+    }
+
+    fun updateUsernameInDatabase(username: String) {
+        viewModelScope.launch {
+            try {
+                dbManager.updateUsername(username)
+            } catch (e: Exception) {
+                println("Error updating username in database: ${e.message}")
+            }
         }
     }
 

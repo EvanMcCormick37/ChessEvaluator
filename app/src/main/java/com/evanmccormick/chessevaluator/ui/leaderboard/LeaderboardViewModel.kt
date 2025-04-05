@@ -2,7 +2,10 @@ package com.evanmccormick.chessevaluator.ui.leaderboard
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.delay
+import com.evanmccormick.chessevaluator.ui.utils.db.DatabaseManager
+import com.evanmccormick.chessevaluator.ui.utils.db.LeaderboardUser
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,11 +22,12 @@ data class LeaderboardEntry(
 data class LeaderboardTab(
     val title: String,
     val tabTitle: String,
-    val entries: List<LeaderboardEntry>
+    val entries: List<LeaderboardEntry>,
+    val timeControl: Int // Store the time control value for this tab
 )
 
 data class LeaderboardState(
-    val isLoading: Boolean = false,
+    val isLoading: Boolean = true,
     val tabs: List<LeaderboardTab> = emptyList(),
     val currentTabIndex: Int = 2, // Default to 30 Seconds tab (index 2)
     val selectedTags: List<String> = emptyList(),
@@ -31,7 +35,8 @@ data class LeaderboardState(
         "Opening", "Middlegame", "Endgame", "Tactics",
         "Strategy", "Positional", "Attacking", "Defending"
     ),
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val showTagSelector: Boolean = false
 )
 
 class LeaderboardViewModel : ViewModel() {
@@ -39,14 +44,19 @@ class LeaderboardViewModel : ViewModel() {
     private val _state = MutableStateFlow(LeaderboardState())
     val state: StateFlow<LeaderboardState> = _state.asStateFlow()
 
-    // Mock data for each time control
-    private val mockData = listOf(
-        Triple("5 Second Leaders", "0:05", generateMockEntries(prefix = "Bullet")),
-        Triple("15 Second Leaders", "0:15", generateMockEntries(prefix = "Blitz")),
-        Triple("30 Second Leaders", "0:30", generateMockEntries(prefix = "Rapid")),
-        Triple("1 Minute Leaders","1:00",generateMockEntries(prefix = "Steady")),
-        Triple("2 Minute Leaders","2:00",generateMockEntries(prefix = "Careful")),
-        Triple("5 Minute Leaders","5:00",generateMockEntries(prefix = "Classical"))
+    // Database Handling
+    val auth = FirebaseAuth.getInstance()
+    val db = FirebaseFirestore.getInstance()
+    val dbManager = DatabaseManager(auth, db)
+
+    // Define time controls
+    private val timeControls = listOf(
+        Triple("5 Second Leaders", "0:05", 5),
+        Triple("15 Second Leaders", "0:15", 15),
+        Triple("30 Second Leaders", "0:30", 30),
+        Triple("1 Minute Leaders", "1:00", 60),
+        Triple("2 Minute Leaders", "2:00", 120),
+        Triple("5 Minute Leaders", "5:00", 300)
     )
 
     init {
@@ -58,21 +68,20 @@ class LeaderboardViewModel : ViewModel() {
             try {
                 _state.update { it.copy(isLoading = true) }
 
-                // Simulate network delay
-                delay(500)
-
-                // Create tabs from mock data
-                val tabs = mockData.map{
-                    (title,tabTitle,entries)->LeaderboardTab(title,tabTitle,entries)
-                }
-
-                _state.update {
-                    it.copy(
-                        isLoading = false,
-                        tabs = tabs,
-                        errorMessage = null
+                // Create empty tabs first with proper structure
+                val emptyTabs = timeControls.map { (title, tabTitle, timeControlValue) ->
+                    LeaderboardTab(
+                        title = title,
+                        tabTitle = tabTitle,
+                        entries = emptyList(),
+                        timeControl = timeControlValue
                     )
                 }
+                _state.update { it.copy(tabs = emptyTabs) }
+
+                // Load data for the current tab
+                loadCurrentTabData()
+
             } catch (e: Exception) {
                 _state.update {
                     it.copy(
@@ -84,29 +93,100 @@ class LeaderboardViewModel : ViewModel() {
         }
     }
 
+    // Load data only for the current tab to improve performance
+    private suspend fun loadCurrentTabData() {
+        val currentTabIndex = _state.value.currentTabIndex
+        if (currentTabIndex >= 0 && currentTabIndex < _state.value.tabs.size) {
+            val currentTab = _state.value.tabs[currentTabIndex]
+            val timeControl = currentTab.timeControl
+
+            // Fetch leaderboard data from Firebase
+            val leaderboardUsers = dbManager.getLeaderboard(timeControl)
+
+            // Convert to UI entries
+            val entries = leaderboardUsers.map { user ->
+                LeaderboardEntry(
+                    rank = user.rank,
+                    name = user.username,
+                    elo = user.elo,
+                    isCurrentUser = user.isCurrentUser
+                )
+            }
+
+            // Update just the current tab
+            val updatedTabs = _state.value.tabs.toMutableList()
+            updatedTabs[currentTabIndex] = currentTab.copy(entries = entries)
+
+            _state.update {
+                it.copy(
+                    tabs = updatedTabs,
+                    isLoading = false
+                )
+            }
+        }
+    }
+
     fun changeTab(index: Int) {
-        if (index in _state.value.tabs.indices) {
-            _state.update { it.copy(currentTabIndex = index) }
+        if (index in _state.value.tabs.indices && index != _state.value.currentTabIndex) {
+            _state.update { it.copy(currentTabIndex = index, isLoading = true) }
+
+            // Load data for the newly selected tab
+            viewModelScope.launch {
+                loadCurrentTabData()
+            }
         }
     }
 
     fun findMe() {
-        // In the future, this would locate the user in the leaderboard
-        // For now, we'll just highlight the 30th position (index 29)
-        val targetIndex = 29 // Index for position 30 (0-based indexing)
+        viewModelScope.launch {
+            try {
+                _state.update { it.copy(isLoading = true) }
 
-        val updatedTabs = _state.value.tabs.mapIndexed { tabIndex, tab ->
-            if (tabIndex == _state.value.currentTabIndex) {
-                val updatedEntries = tab.entries.mapIndexed { entryIndex, entry ->
-                    entry.copy(isCurrentUser = entryIndex == targetIndex)
+                val currentTabIndex = _state.value.currentTabIndex
+                val currentTab = _state.value.tabs[currentTabIndex]
+                val timeControl = currentTab.timeControl
+
+                // Get user's position on the leaderboard
+                val userPosition = dbManager.getUserLeaderboardPosition(timeControl)
+
+                if (userPosition != null) {
+                    // Fetch an updated leaderboard centered around the user's position
+                    val leaderboardUsers = dbManager.getLeaderboard(timeControl)
+
+                    // Convert to UI entries
+                    val entries = leaderboardUsers.map { user ->
+                        LeaderboardEntry(
+                            rank = user.rank,
+                            name = user.username,
+                            elo = user.elo,
+                            isCurrentUser = user.id == userPosition.id
+                        )
+                    }
+
+                    // Update the current tab
+                    val updatedTabs = _state.value.tabs.toMutableList()
+                    updatedTabs[currentTabIndex] = currentTab.copy(entries = entries)
+
+                    _state.update {
+                        it.copy(
+                            tabs = updatedTabs,
+                            isLoading = false
+                        )
+                    }
+
+                    // TODO: Scroll to user's position in the UI
+                } else {
+                    _state.update { it.copy(isLoading = false) }
                 }
-                tab.copy(entries = updatedEntries)
-            } else {
-                tab
+            } catch (e: Exception) {
+                _state.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = "Failed to find your position: ${e.message}"
+                    )
+                }
             }
         }
-
-        _state.update { it.copy(tabs = updatedTabs) }
     }
 
     fun addTag(tag: String) {
@@ -116,6 +196,7 @@ class LeaderboardViewModel : ViewModel() {
             }
             // In a real implementation, this would trigger filtering
             // of the leaderboard data based on the selected tags
+            filterByTags()
         }
     }
 
@@ -123,27 +204,41 @@ class LeaderboardViewModel : ViewModel() {
         _state.update {
             it.copy(selectedTags = it.selectedTags - tag)
         }
-        // In a real implementation, this would trigger filtering
-        // of the leaderboard data based on the selected tags
+        // Remove the tag filter
+        filterByTags()
     }
 
-    // Helper to generate mock data
-    private fun generateMockEntries(prefix: String): List<LeaderboardEntry> {
-        val names = listOf("Paul", "Raul", "Rail", "Pail", "Nail", "Snail", "Tail", "Mail",
-            "Hail", "Dale", "Gale", "Yale", "Nial", "Karl", "Earl")
-        return (1..30).map { rank ->
-            val elo = when (rank) {
-                1 -> 1980
-                2 -> 1970
-                3 -> 1960
-                else -> (1900 - (rank - 3) * 10).coerceAtLeast(1100)
-            }
+    fun showTagSelector() {
+        _state.update { it.copy(showTagSelector = true) }
+    }
 
-            LeaderboardEntry(
-                rank = rank,
-                name = if (rank <= names.size) names[rank - 1] else "$prefix Player $rank",
-                elo = elo
-            )
+    fun hideTagSelector() {
+        _state.update { it.copy(showTagSelector = false) }
+    }
+
+    fun dismissError() {
+        _state.update { it.copy(errorMessage = null) }
+    }
+
+    // Note: This is a placeholder for tag filtering
+    // In a real implementation, you would query Firestore with a tag filter
+    private fun filterByTags() {
+        viewModelScope.launch {
+            try {
+                _state.update { it.copy(isLoading = true) }
+
+                // Reload current tab data
+                // In a real implementation, you would pass tags to the database query
+                loadCurrentTabData()
+
+            } catch (e: Exception) {
+                _state.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = "Failed to apply filters: ${e.message}"
+                    )
+                }
+            }
         }
     }
 }

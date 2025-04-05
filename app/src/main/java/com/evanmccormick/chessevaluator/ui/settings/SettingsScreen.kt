@@ -60,45 +60,39 @@ fun SettingsContent(viewModel: SettingsViewModel) {
         ) {
             // Profile Settings Section
             SettingsSection(title = "Profile Settings", textColor = textColor) {
-                // Username Setting
+                // Username Setting with Update Button
                 SettingRow(
                     label = "Username",
-                    textColor = textColor,
-                    content = {
-                        OutlinedTextField(
-                            value = settings.username,
-                            onValueChange = { viewModel.updateUsername(it) },
-                            modifier = Modifier
-                                .height(56.dp) // Increased height
-                                .width(120.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedContainerColor = textFieldBackgroundColor,
-                                unfocusedContainerColor = textFieldBackgroundColor,
-                                focusedBorderColor = textColor,
-                                unfocusedBorderColor = textColor,
-                                focusedTextColor = textColor,
-                                unfocusedTextColor = textColor
-                            ),
-                            singleLine = true
-                        )
-                    }
-                )
-
-                // Leaderboard Visibility Setting
-                SettingRow(
-                    label = "Leaderboard Visibility",
                     textColor = textColor,
                     content = {
                         Row(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            ToggleSegmentedButton(
-                                options = listOf("On", "Off"),
-                                selectedOption = if (settings.leaderboardVisible) "On" else "Off",
-                                onOptionSelected = { viewModel.updateLeaderboardVisibility(it == "On") },
-                                textColor = textColor,
-                                backgroundColor = textFieldBackgroundColor
+                            OutlinedTextField(
+                                value = settings.username,
+                                onValueChange = { viewModel.updateUsername(it) },
+                                modifier = Modifier
+                                    .height(56.dp)
+                                    .width(120.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedContainerColor = textFieldBackgroundColor,
+                                    unfocusedContainerColor = textFieldBackgroundColor,
+                                    focusedBorderColor = textColor,
+                                    unfocusedBorderColor = textColor,
+                                    focusedTextColor = textColor,
+                                    unfocusedTextColor = textColor
+                                ),
+                                singleLine = true
                             )
+
+                            Spacer(modifier = Modifier.width(8.dp))
+
+                            Button(
+                                onClick = { viewModel.updateUsernameInDatabase(settings.username) },
+                                modifier = Modifier.height(48.dp)
+                            ) {
+                                Text("Update")
+                            }
                         }
                     }
                 )
@@ -140,50 +134,6 @@ fun SettingsContent(viewModel: SettingsViewModel) {
                             textColor = textColor,
                             backgroundColor = textFieldBackgroundColor
                         )
-                    }
-                )
-
-                // Filter Tags Setting
-                SettingRow(
-                    label = "Filter Tags",
-                    textColor = textColor,
-                    content = {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            // Tag TextField
-                            OutlinedTextField(
-                                value = settings.currentTag,
-                                onValueChange = { viewModel.updateCurrentTag(it) },
-                                modifier = Modifier
-                                    .height(56.dp) // Increased height
-                                    .width(140.dp),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedContainerColor = textFieldBackgroundColor,
-                                    unfocusedContainerColor = textFieldBackgroundColor,
-                                    focusedBorderColor = textColor,
-                                    unfocusedBorderColor = textColor,
-                                    focusedTextColor = textColor,
-                                    unfocusedTextColor = textColor
-                                ),
-                                singleLine = true
-                            )
-
-                            // Add Tag Button
-                            IconButton(
-                                onClick = { viewModel.addTag() },
-                                modifier = Modifier
-                                    .padding(start = 8.dp)
-                                    .size(24.dp)
-                            ) {
-                                Text(
-                                    text = "+",
-                                    color = textColor,
-                                    fontSize = 20.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
                     }
                 )
 

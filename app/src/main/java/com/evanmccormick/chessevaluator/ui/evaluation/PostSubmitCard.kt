@@ -1,6 +1,5 @@
 package com.evanmccormick.chessevaluator.ui.evaluation
 
-import android.app.Notification.Extender
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -8,20 +7,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -40,8 +33,14 @@ import kotlin.math.min
 @Composable
 fun PostSubmitCard(
     evaluationState: EvaluationState,
+    isDarkTheme: () -> Boolean,
     onContinue: () -> Unit
 ) {
+
+    val minEval = min(evaluationState.sigmoidEvaluation, evaluationState.userSigmoidEvaluation)
+    val maxEval = max(evaluationState.sigmoidEvaluation, evaluationState.userSigmoidEvaluation)
+    val evalDifference = abs(maxEval - minEval)
+    val eloTransferGood = evaluationState.eloTransfer < 0 //Elo transfer is categorized in terms of position elo gain/loss. This tracks user gain/loss
     Column(
         modifier = Modifier
             .fillMaxWidth(),
@@ -79,23 +78,27 @@ fun PostSubmitCard(
                             // Left side - White's evaluation
                             Box(
                                 modifier = Modifier
-                                    .weight(min(evaluationState.sigmoidEvaluation, evaluationState.userSigmoidEvaluation))
+                                    .weight(minEval)
                                     .fillMaxHeight()
                                     .background(ExtendedTheme.colors.evaluationWhite)
                             )
                             // Red box marking user error
-                            if (abs(evaluationState.sigmoidEvaluation - evaluationState.userSigmoidEvaluation) > 0) {
+                            if (evalDifference > 0) {
                                 Box(
                                 modifier = Modifier
                                     .weight(abs(evaluationState.sigmoidEvaluation - evaluationState.userSigmoidEvaluation))
                                     .fillMaxHeight()
-                                    .background(Color.Red)
-                            )
+                                    .background(when{
+                                        evalDifference < 0.125f -> Color.Green
+                                        evalDifference < 0.25f -> Color.Yellow
+                                        else -> Color.Red
+                                    })
+                                )
                             }
                             // Right side - Black's evaluation
                             Box(
                                 modifier = Modifier
-                                    .weight(1 - max(evaluationState.sigmoidEvaluation, evaluationState.userSigmoidEvaluation))
+                                    .weight(1 - maxEval)
                                     .fillMaxHeight()
                                     .background(ExtendedTheme.colors.evaluationBlack)
                             )
@@ -112,40 +115,42 @@ fun PostSubmitCard(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Tag(
-                    text = "Position Elo: ${evaluationState.positionElo}",
-                    color = MaterialTheme.colorScheme.secondaryContainer
+                    text = "User Elo ${if (eloTransferGood) "+" else ""}${-evaluationState.eloTransfer}: ${evaluationState.userElo}",
+                    color = if (eloTransferGood) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.secondaryContainer
                 )
                 Tag(
-                    text = "User Elo: ${evaluationState.userElo}",
+                    text = "Position Elo ${if (eloTransferGood) "" else "+"}${evaluationState.eloTransfer}: ${evaluationState.positionElo}",
                     color = MaterialTheme.colorScheme.secondaryContainer
                 )
             }
         }
 
         // Tags Section
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-        ) {
-            Text(
-                text = "Tags",
-                color = MaterialTheme.colorScheme.onBackground,
-                fontSize = 16.sp,
-                modifier = Modifier.padding(bottom = 8.dp, top = 8.dp)
-            )
-
-            FlowRow(
+        if (!evaluationState.tags.isEmpty()) {
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                maxItemsInEachRow = 3
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
             ) {
-                for (tag in evaluationState.tags) {
-                    Tag(tag)
+                Text(
+                    text = "Tags",
+                    color = MaterialTheme.colorScheme.onBackground,
+                    fontSize = 16.sp,
+                    modifier = Modifier.padding(bottom = 8.dp, top = 8.dp)
+                )
+                FlowRow(
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    maxItemsInEachRow = 3
+                ) {
+                    for (tag in evaluationState.tags) {
+                        Tag(tag)
+                    }
                 }
             }
         }
+
 
         // Continue Button
         Button(
@@ -154,7 +159,7 @@ fun PostSubmitCard(
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary
+                containerColor = if (isDarkTheme()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSecondary
             )
         ) {
             Text(text = "Continue")

@@ -35,7 +35,8 @@ fun PreSubmitCard(
     evaluationState: EvaluationState,
     timerRemaining: Int,
     onSliderChange: (Float) -> Unit,
-    onGuess: () -> Unit
+    onGuess: () -> Unit,
+    isDarkTheme: () -> Boolean
 ) {
     Column(
         modifier = Modifier
@@ -152,7 +153,7 @@ fun PreSubmitCard(
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary
+                containerColor = if (isDarkTheme()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSecondary
             )
         ) {
             Text(text = "Guess")

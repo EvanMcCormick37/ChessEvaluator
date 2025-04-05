@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.evanmccormick.chessevaluator.ui.theme.ThemeController
 import com.evanmccormick.chessevaluator.utils.navigation.ScreenWithNavigation
 
 @Composable
@@ -26,7 +27,7 @@ fun EvaluationScreen(
     viewModel: EvaluationViewModel
 ) {
     LaunchedEffect(key1 = true) {
-        viewModel.loadPositionFromApi()
+        viewModel.resetForNewPosition()
     }
 
     ScreenWithNavigation(
@@ -44,12 +45,12 @@ fun EvaluationContent(
     val evaluationState by viewModel.evaluationState.collectAsState()
     val timerRemaining by viewModel.timerRemaining.collectAsState()
     val scrollState = rememberScrollState()
-
+    val isDarkTheme by ThemeController.isDarkTheme.collectAsState()
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(if (isDarkTheme) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.primary)
             .verticalScroll(scrollState)
     ) {
         if(evaluationState.isLoading) {
@@ -74,12 +75,14 @@ fun EvaluationContent(
                     evaluationState = evaluationState,
                     timerRemaining = timerRemaining,
                     onSliderChange = { viewModel.updateSliderPosition(it) },
-                    onGuess = { viewModel.evaluatePosition() }
+                    onGuess = { viewModel.evaluatePosition() },
+                    isDarkTheme = { isDarkTheme }
                 )
             } else {
                 // Post-submission: Evaluation graph, Tags, Continue button
                 PostSubmitCard(
                     evaluationState = evaluationState,
+                    isDarkTheme = { isDarkTheme },
                     onContinue = { viewModel.resetForNewPosition() }
                 )
             }

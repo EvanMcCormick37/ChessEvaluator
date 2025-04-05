@@ -37,6 +37,7 @@ val White = Color(0xFFFFFFFF)
 val LightGray = Color(0xFFF0F0F0)
 val DarkGray = Color(0xFF424242)
 
+
 val LightSquare = Color(0xffe9f2f2)
 val DarkSquare = Color(0xff0f7d7d)
 
@@ -79,7 +80,7 @@ private val LightColorScheme = lightColorScheme(
     primaryContainer = LightTeal,
     onPrimaryContainer = DarkTeal,
     secondary = MediumPurple,
-    onSecondary = White,
+    onSecondary = AccentTeal,
     secondaryContainer = LightPurple,
     onSecondaryContainer = White,
     tertiary = LightAccent,

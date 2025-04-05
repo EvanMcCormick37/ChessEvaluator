@@ -2,6 +2,8 @@ package com.evanmccormick.chessevaluator.ui.evaluation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.evanmccormick.chessevaluator.ui.utils.db.DatabaseManager
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -12,7 +14,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import kotlin.math.abs
+import kotlin.random.Random
 
 data class EvaluationState(
     val evaluationText: String = "0.0",
@@ -26,7 +30,9 @@ data class EvaluationState(
     val hasSubmitted: Boolean = false,
     val isLoading: Boolean = true,
     val positionElo: Int = 1500,
+    val positionId: String = "",
     val userElo: Int = 1500,
+    val eloTransfer: Int = 0,
 )
 
 class EvaluationViewModel : ViewModel() {
@@ -35,6 +41,11 @@ class EvaluationViewModel : ViewModel() {
         positionFen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1",
     ))
     val evaluationState: StateFlow<EvaluationState> = _evaluationState.asStateFlow()
+
+    // Database Handling
+    val auth = FirebaseAuth.getInstance()
+    val db = FirebaseFirestore.getInstance()
+    val dbManager = DatabaseManager(auth, db)
 
     // Timer functionality
     private val _timerRemaining = MutableStateFlow(0)
@@ -62,7 +73,6 @@ class EvaluationViewModel : ViewModel() {
 
     // Start countdown timer
     private fun startTimer() {
-        timerJob?.cancel()
         timerJob = viewModelScope.launch {
             while (_timerRemaining.value > 0) {
                 delay(1000)
@@ -89,17 +99,17 @@ class EvaluationViewModel : ViewModel() {
         }
     }
 
-    fun sigmoidToEval(position: Float): Float {
+    fun sigmoidToEval(position: Float, stretch: Float = 2f): Float {
         // Prevent division by zero or log of negative number
         val clampedPosition = position.coerceIn(0.001f, 0.999f)
 
-        // Inverse sigmoid: -ln(1/y - 1)
-        return -2*Math.log((1f / clampedPosition - 1).toDouble()).toFloat()
+        // Inverse sigmoid: -ln(1/y - 1). Stretch multiplies the Eval output relative to the Sigmoid input
+        return -stretch*Math.log((1f / clampedPosition - 1).toDouble()).toFloat()
     }
 
-    fun evalToSigmoid(value: Float): Float {
-        // Sigmoid function: 1 / (1 + e^(-x))
-        val result = (1f / (1f + Math.exp(-value.toDouble()))).toFloat()
+    fun evalToSigmoid(value: Float, squish: Float = 0.5f): Float {
+        // Sigmoid function: 1 / (1 + e^(-x)). Squish shrinks the output range relative to the Eval input
+        val result = (1f / (1f + Math.exp(-(value*squish).toDouble()))).toFloat()
 
         // Optional: ensure output is strictly in [0,1]
         return result.coerceIn(0.001f, 0999f)
@@ -128,35 +138,55 @@ class EvaluationViewModel : ViewModel() {
                 currentState.copy(isLoading = true)
             }
             try{
-                val db = FirebaseFirestore.getInstance()
-                val positionsRef = db.collection("positions")
 
-                positionsRef.limit(1).get().addOnSuccessListener { querySnapshot ->
-                    if (!querySnapshot.isEmpty) {
-                        val document = querySnapshot.documents[0]
-                        val fen = document.getString("fen")!!
-                        val eval = document.getDouble("eval")!!.toFloat()
-                        val elo = document.getLong("elo")!!.toInt()
-                        val tags = document.get("tags") as List<String>
-                        val evalExplanation = getEvalExplanation(eval)
-                        val sigmoidEval = evalToSigmoid(eval)
+                val pos = dbManager.getRandomPosition(timeControl!!.durationSeconds)
 
-                        _evaluationState.update { currentState ->
-                            currentState.copy(
-                                positionFen = fen,
-                                evaluation = eval,
-                                sigmoidEvaluation = sigmoidEval,
-                                positionElo = elo,
-                                tags = tags,
-                                evalExplanation = evalExplanation,
-                                isLoading = false
-                            )
-                        }
-                    }
+                _evaluationState.update { currentState ->
+                    currentState.copy(
+                        positionId = pos.id,
+                        positionFen = pos.fen,
+                        evaluation = pos.eval,
+                        sigmoidEvaluation = evalToSigmoid(pos.eval),
+                        positionElo = pos.elo,
+                        tags = pos.tags,
+                        evalExplanation = getEvalExplanation(pos.eval),
+                        isLoading = false
+                    )
                 }
             } catch(e: Exception) {
                 _evaluationState.update { it.copy(isLoading = false) }
+            } finally {
+                resetTimer()
             }
+        }
+    }
+
+    fun loadUserEloFromApi() {
+        viewModelScope.launch {
+            val elo = dbManager.getUserElo(timeControl!!.durationSeconds)
+            _evaluationState.update { currentState ->
+                currentState.copy(
+                    userElo = elo
+                )
+            }
+        }
+    }
+
+    // Calculate elo transfer based on user's guess, returns position's change in Elo
+    fun calculateEloTransfer(userElo: Int, positionElo: Int, evaluationDifferenceSigmoid: Float): Int {
+        fun multiplier(ratingA: Int, ratingB: Int): Double {
+            return 1.0 / (1.0 + Math.pow(10.0, (ratingB - ratingA) / 400.0))
+        }
+        val error = evaluationDifferenceSigmoid - 0.175f
+        val merit = 0.1
+        val k = 100
+        var multiplier = 0.0
+        if (error > 0) {
+            multiplier = multiplier(userElo, positionElo)
+            return ((multiplier* (error+merit) * k).toInt())
+        } else {
+            multiplier = multiplier(positionElo, userElo)
+            return ((multiplier * (error-merit) * k).toInt())
         }
     }
 
@@ -164,9 +194,22 @@ class EvaluationViewModel : ViewModel() {
         // Stop the timer when evaluation is submitted
         timerJob?.cancel()
 
+        // Update the position's elo, and the user's elo
+        val evalDiffSigmoid = abs(evaluationState.value.userSigmoidEvaluation - evaluationState.value.sigmoidEvaluation)
+        val eloTransfer = calculateEloTransfer(evaluationState.value.userElo, evaluationState.value.positionElo, evalDiffSigmoid)
+        val newUserElo = evaluationState.value.userElo - eloTransfer
+        val newPositionElo = evaluationState.value.positionElo + eloTransfer
+        val positionId = evaluationState.value.positionId
+        viewModelScope.launch {
+            dbManager.updatePositionElo(positionId, newPositionElo, timeControl!!.durationSeconds)
+            dbManager.updateUserElo(newUserElo, timeControl!!.durationSeconds)
+        }
         // Set hasSubmitted to true
         _evaluationState.update { currentState ->
             currentState.copy(
+                eloTransfer = eloTransfer,
+                positionElo = newPositionElo,
+                userElo = newUserElo,
                 hasSubmitted = true
             )
         }
@@ -194,15 +237,16 @@ class EvaluationViewModel : ViewModel() {
     // Reset the evaluation state for a new position
     fun resetForNewPosition() {
         loadPositionFromApi()
+        loadUserEloFromApi()
         _evaluationState.update { currentState ->
             currentState.copy(
                 evaluationText = "0.0",
                 userEvaluation = 0f,
                 userSigmoidEvaluation = 0.5f,
                 hasSubmitted = false,
+                eloTransfer = 0,
                 )
         }
-        resetTimer()
     }
 
     override fun onCleared() {
