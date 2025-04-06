@@ -61,33 +61,14 @@ fun EvaluationContent(
             )
         } else {
             // Title and position explanation text
-            HeaderContent(evaluationState)
-
-            // Chess board - always visible
-            AnalysisBoard(
-                fen = evaluationState.positionFen
+            HeaderContent(
+                evaluationState,
+                timerRemaining,
+                isDarkTheme,
+                onSliderChange = { viewModel.updateSliderPosition(it) },
+                onGuess = { viewModel.evaluatePosition() },
+                onContinue = { viewModel.resetForNewPosition() }
             )
-
-            // Conditional rendering based on submission state
-            if (!evaluationState.hasSubmitted) {
-                // Pre-submission: Slider, Timer, Guess button
-                PreSubmitCard(
-                    evaluationState = evaluationState,
-                    timerRemaining = timerRemaining,
-                    onSliderChange = { viewModel.updateSliderPosition(it) },
-                    onGuess = { viewModel.evaluatePosition() },
-                    isDarkTheme = { isDarkTheme }
-                )
-            } else {
-                // Post-submission: Evaluation graph, Tags, Continue button
-                PostSubmitCard(
-                    evaluationState = evaluationState,
-                    isDarkTheme = { isDarkTheme },
-                    onContinue = { viewModel.resetForNewPosition() }
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }

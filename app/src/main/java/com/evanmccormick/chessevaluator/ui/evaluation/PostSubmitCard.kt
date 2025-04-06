@@ -1,16 +1,11 @@
 package com.evanmccormick.chessevaluator.ui.evaluation
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -25,6 +20,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.evanmccormick.chessevaluator.ui.theme.ExtendedTheme
+import com.github.bhlangonijr.chesslib.Side
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
@@ -33,6 +29,7 @@ import kotlin.math.min
 @Composable
 fun PostSubmitCard(
     evaluationState: EvaluationState,
+    sideToMove: Side,
     isDarkTheme: () -> Boolean,
     onContinue: () -> Unit
 ) {
@@ -53,59 +50,13 @@ fun PostSubmitCard(
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Evaluation graph
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(80.dp)
-                    .padding(vertical = 8.dp)
-            ) {
-                // Show the evaluation curve
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    shape = RoundedCornerShape(8.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant
-                ) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        // Simple visualization showing user guess vs actual
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                        ) {
-                            // Left side - White's evaluation
-                            Box(
-                                modifier = Modifier
-                                    .weight(minEval)
-                                    .fillMaxHeight()
-                                    .background(ExtendedTheme.colors.evaluationWhite)
-                            )
-                            // Red box marking user error
-                            if (evalDifference > 0) {
-                                Box(
-                                modifier = Modifier
-                                    .weight(abs(evaluationState.sigmoidEvaluation - evaluationState.userSigmoidEvaluation))
-                                    .fillMaxHeight()
-                                    .background(when{
-                                        evalDifference < 0.125f -> Color.Green
-                                        evalDifference < 0.25f -> Color.Yellow
-                                        else -> Color.Red
-                                    })
-                                )
-                            }
-                            // Right side - Black's evaluation
-                            Box(
-                                modifier = Modifier
-                                    .weight(1 - maxEval)
-                                    .fillMaxHeight()
-                                    .background(ExtendedTheme.colors.evaluationBlack)
-                            )
-                        }
-                    }
-                }
-            }
+            PostSubmitSlider(
+                evaluationState,
+                minEval,
+                evalDifference,
+                maxEval,
+                sideToMove
+            )
 
             // Position difficulty and accuracy indicator
             Row(

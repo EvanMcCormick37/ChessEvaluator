@@ -3,6 +3,7 @@ package com.evanmccormick.chessevaluator.ui.evaluation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.evanmccormick.chessevaluator.ui.utils.db.DatabaseManager
+import com.github.bhlangonijr.chesslib.Side
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.Job
@@ -23,6 +24,7 @@ data class EvaluationState(
     val evalExplanation: String = "The position is equal",
     val positionFen: String = "", // Will be used later when integrating with backend
     val tags: List<String> = listOf("Opening", "Closed Position", "Ray Lopez", "Queenless Middlegame"),
+    val sideToMove: Side? = null,
     val evaluation: Float = 0f, // The actual evaluation from engine/database
     val sigmoidEvaluation: Float = 0.5f, // The evaluation after sigmoid
     val userEvaluation: Float = 0f, // The user's guess
@@ -90,26 +92,27 @@ class EvaluationViewModel : ViewModel() {
     fun updateSliderPosition(position: Float) {
         _evaluationState.update { currentState ->
             val clampedPosition = position.coerceIn(0.001f, 0.999f)
-            val userEval = sigmoidToEval(clampedPosition)
+            val userEval = sigmoidToEval(clampedPosition, currentState.sideToMove!!)
             currentState.copy(
-                evaluationText = String.format("%.2f",userEval),
+                evaluationText = String.format("%.2f", userEval),
                 userEvaluation = userEval,
                 userSigmoidEvaluation = clampedPosition //Sigmoid eval is the same as the slider position
             )
         }
     }
 
-    fun sigmoidToEval(position: Float, stretch: Float = 2f): Float {
+    fun sigmoidToEval(position: Float, sideToMove: Side, stretch: Float = 1f): Float {
         // Prevent division by zero or log of negative number
         val clampedPosition = position.coerceIn(0.001f, 0.999f)
 
         // Inverse sigmoid: -ln(1/y - 1). Stretch multiplies the Eval output relative to the Sigmoid input
-        return -stretch*Math.log((1f / clampedPosition - 1).toDouble()).toFloat()
+        val eval = -stretch*Math.log((1f / clampedPosition - 1).toDouble()).toFloat()
+        return if (sideToMove == Side.WHITE) eval else -eval
     }
 
-    fun evalToSigmoid(value: Float, squish: Float = 0.5f): Float {
+    fun evalToSigmoid(value: Float, sideToMove: Side, squish: Float = 0.5f): Float {
         // Sigmoid function: 1 / (1 + e^(-x)). Squish shrinks the output range relative to the Eval input
-        val result = (1f / (1f + Math.exp(-(value*squish).toDouble()))).toFloat()
+        val result = (1f / (1f + Math.exp(-((if (sideToMove == Side.BLACK) -value else value)*squish).toDouble()))).toFloat()
 
         // Optional: ensure output is strictly in [0,1]
         return result.coerceIn(0.001f, 0999f)
@@ -140,13 +143,15 @@ class EvaluationViewModel : ViewModel() {
             try{
 
                 val pos = dbManager.getRandomPosition(timeControl!!.durationSeconds)
+                val sideToMove = if (pos.fen.split(" ")[1] == "w") Side.WHITE else Side.BLACK
 
                 _evaluationState.update { currentState ->
                     currentState.copy(
                         positionId = pos.id,
                         positionFen = pos.fen,
                         evaluation = pos.eval,
-                        sigmoidEvaluation = evalToSigmoid(pos.eval),
+                        sideToMove = sideToMove,
+                        sigmoidEvaluation = evalToSigmoid(pos.eval, sideToMove),
                         positionElo = pos.elo,
                         tags = pos.tags,
                         evalExplanation = getEvalExplanation(pos.eval),
@@ -212,25 +217,6 @@ class EvaluationViewModel : ViewModel() {
                 userElo = newUserElo,
                 hasSubmitted = true
             )
-        }
-    }
-
-    // Add or remove tags
-    fun addTag(tag: String) {
-        _evaluationState.update { currentState ->
-            val updatedTags = currentState.tags.toMutableList()
-            if (!updatedTags.contains(tag)) {
-                updatedTags.add(tag)
-            }
-            currentState.copy(tags = updatedTags)
-        }
-    }
-
-    fun removeTag(tag: String) {
-        _evaluationState.update { currentState ->
-            val updatedTags = currentState.tags.toMutableList()
-            updatedTags.remove(tag)
-            currentState.copy(tags = updatedTags)
         }
     }
 

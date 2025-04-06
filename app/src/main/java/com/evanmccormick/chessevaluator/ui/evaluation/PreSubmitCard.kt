@@ -29,11 +29,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.evanmccormick.chessevaluator.ui.theme.ExtendedTheme
+import com.github.bhlangonijr.chesslib.Side
 
 @Composable
 fun PreSubmitCard(
     evaluationState: EvaluationState,
     timerRemaining: Int,
+    sideToMove: Side,
     onSliderChange: (Float) -> Unit,
     onGuess: () -> Unit,
     isDarkTheme: () -> Boolean
@@ -50,57 +52,24 @@ fun PreSubmitCard(
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Custom Slider with black and white sides
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(40.dp)
-                    .padding(vertical = 8.dp)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(RoundedCornerShape(20.dp))
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .weight(evaluationState.userSigmoidEvaluation)
-                            .fillMaxHeight()
-                            .background(ExtendedTheme.colors.evaluationWhite)
-                    )
-                    Box(
-                        modifier = Modifier
-                            .weight(1f - evaluationState.userSigmoidEvaluation)
-                            .fillMaxHeight()
-                            .background(ExtendedTheme.colors.evaluationBlack)
-                    )
-                }
-
-                // Slider
-                Slider(
-                    value = evaluationState.userSigmoidEvaluation,
-                    onValueChange = onSliderChange,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .alpha(0f), // Make slider invisible but functional
-                    colors = SliderDefaults.colors(
-                        thumbColor = MaterialTheme.colorScheme.primary,
-                        activeTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0f),
-                        inactiveTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0f)
-                    )
-                )
-            }
+            PreSubmitSlider(
+                evaluationState,
+                sideToMove,
+                onSliderChange
+            )
 
             Surface(
                 modifier = Modifier
                     .padding(top = 8.dp),
                 shape = RoundedCornerShape(8.dp),
+                color = if(evaluationState.evaluationText.toFloat() > 0) ExtendedTheme.colors.evaluationWhite else ExtendedTheme.colors.evaluationBlack,
                 tonalElevation = 1.dp
             ) {
                 Text(
                     text = evaluationState.evaluationText,
                     modifier = Modifier
                         .padding(horizontal = 16.dp, vertical = 8.dp),
+                    color = if(evaluationState.evaluationText.toFloat() > 0) ExtendedTheme.colors.evaluationBlack else ExtendedTheme.colors.evaluationWhite,
                     style = MaterialTheme.typography.bodyLarge
                 )
             }

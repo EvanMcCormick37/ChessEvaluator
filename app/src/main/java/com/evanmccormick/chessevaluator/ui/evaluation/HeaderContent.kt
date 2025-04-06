@@ -1,5 +1,6 @@
 package com.evanmccormick.chessevaluator.ui.evaluation
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -23,6 +24,11 @@ import kotlin.math.abs
 @Composable
 fun HeaderContent(
     evaluationState: EvaluationState,
+    timerRemaining: Int,
+    isDarkTheme: Boolean,
+    onSliderChange: (Float) -> Unit,
+    onContinue: () -> Unit,
+    onGuess: () -> Unit
 ){
     val board = remember(evaluationState.positionFen) {
         try {
@@ -35,7 +41,7 @@ fun HeaderContent(
             Board()
         }
     }
-    val sideToMove = board.sideToMove
+    val sideToMove = evaluationState.sideToMove
     val sideToMoveText = if (sideToMove == Side.WHITE) "White" else "Black"
     val evaluationDifference = abs(evaluationState.userEvaluation - evaluationState.evaluation)
 
@@ -79,5 +85,31 @@ fun HeaderContent(
                     color = MaterialTheme.colorScheme.onBackground
                 )
             }
+
+        // Chess board - always visible
+        AnalysisBoard(
+            fen = evaluationState.positionFen
+        )
+
+        // Conditional rendering based on submission state
+        if (!evaluationState.hasSubmitted) {
+            // Pre-submission: Slider, Timer, Guess button
+            PreSubmitCard(
+                evaluationState = evaluationState,
+                timerRemaining = timerRemaining,
+                sideToMove!!,
+                onSliderChange = { onSliderChange(it) },
+                onGuess = { onGuess() },
+                isDarkTheme = { isDarkTheme }
+            )
+        } else {
+            // Post-submission: Evaluation graph, Tags, Continue button
+            PostSubmitCard(
+                evaluationState = evaluationState,
+                isDarkTheme = { isDarkTheme },
+                onContinue = { onContinue() },
+                sideToMove = sideToMove!!
+            )
+        }
         }
 }
