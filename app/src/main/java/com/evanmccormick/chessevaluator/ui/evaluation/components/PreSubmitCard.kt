@@ -1,13 +1,7 @@
-package com.evanmccormick.chessevaluator.ui.evaluation
+package com.evanmccormick.chessevaluator.ui.evaluation.components
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -16,29 +10,23 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.evanmccormick.chessevaluator.ui.evaluation.EvaluationState
 import com.evanmccormick.chessevaluator.ui.theme.ExtendedTheme
-import com.github.bhlangonijr.chesslib.Side
 
 @Composable
 fun PreSubmitCard(
     evaluationState: EvaluationState,
     timerRemaining: Int,
-    sideToMove: Side,
     onSliderChange: (Float) -> Unit,
     onGuess: () -> Unit,
-    isDarkTheme: () -> Boolean
 ) {
     Column(
         modifier = Modifier
@@ -54,7 +42,7 @@ fun PreSubmitCard(
         ) {
             PreSubmitSlider(
                 evaluationState,
-                sideToMove,
+                evaluationState.sideToMove!!,
                 onSliderChange
             )
 
@@ -122,7 +110,7 @@ fun PreSubmitCard(
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = if (isDarkTheme()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSecondary
+                containerColor = if (evaluationState.darkMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSecondary
             )
         ) {
             Text(text = "Guess")

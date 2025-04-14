@@ -1,4 +1,4 @@
-package com.evanmccormick.chessevaluator.ui.evaluation
+package com.evanmccormick.chessevaluator.ui.evaluation.components
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background

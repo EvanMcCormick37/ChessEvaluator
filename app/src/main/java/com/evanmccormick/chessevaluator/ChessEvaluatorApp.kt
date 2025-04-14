@@ -7,6 +7,7 @@ import com.google.android.gms.common.GooglePlayServicesNotAvailableException
 import com.google.android.gms.common.GooglePlayServicesRepairableException
 import com.google.android.gms.security.ProviderInstaller
 import com.google.firebase.FirebaseApp
+import com.evanmccormick.chessevaluator.ui.theme.AppSettingsController
 
 class ChessEvaluatorApp : Application() {
     companion object {
@@ -18,8 +19,8 @@ class ChessEvaluatorApp : Application() {
         super.onCreate()
         instance = this
 
-        // Install security provider first
-        installLatestSecurityProvider()
+        // Load saved settings
+        AppSettingsController.loadFromPreferences(applicationContext)
 
         // Then initialize Firebase (if not already done elsewhere)
         FirebaseApp.initializeApp(this)

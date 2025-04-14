@@ -21,7 +21,6 @@ fun DashboardScreen(
         viewModel.navigationEvent.collect { destination ->
             when (destination) {
                 is DashboardViewModel.NavigationDestination.Eval -> navController.navigate("eval_screen/${destination.timeControlDuration}")
-                is DashboardViewModel.NavigationDestination.Stats -> navController.navigate("stats_screen")
                 is DashboardViewModel.NavigationDestination.Leaderboard -> navController.navigate("leaderboard_screen")
                 is DashboardViewModel.NavigationDestination.Settings -> navController.navigate("settings_screen")
                 is DashboardViewModel.NavigationDestination.Donate -> navController.navigate("donate_screen")
@@ -57,19 +56,6 @@ fun DashboardScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Button(
-                        onClick = { viewModel.navigateTo(DashboardViewModel.NavigationDestination.Stats) },
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(60.dp),
-                        shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer
-                        )
-                    ) {
-                        Text(text = "Stats")
-                    }
-
                     Button(
                         onClick = { viewModel.navigateTo(DashboardViewModel.NavigationDestination.Leaderboard) },
                         modifier = Modifier

@@ -1,4 +1,4 @@
-package com.evanmccormick.chessevaluator.ui.evaluation
+package com.evanmccormick.chessevaluator.ui.evaluation.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import com.evanmccormick.chessevaluator.ui.evaluation.EvaluationState
 import com.evanmccormick.chessevaluator.ui.theme.ExtendedTheme
 import com.github.bhlangonijr.chesslib.Side
 

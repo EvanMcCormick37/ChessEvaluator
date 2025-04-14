@@ -2,9 +2,7 @@ package com.evanmccormick.chessevaluator.ui.evaluation
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -18,7 +16,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.evanmccormick.chessevaluator.ui.theme.ThemeController
+import com.evanmccormick.chessevaluator.ui.evaluation.components.AnalysisBoard
+import com.evanmccormick.chessevaluator.ui.evaluation.components.HeaderContent
+import com.evanmccormick.chessevaluator.ui.evaluation.components.PostSubmitCard
+import com.evanmccormick.chessevaluator.ui.evaluation.components.PreSubmitCard
 import com.evanmccormick.chessevaluator.utils.navigation.ScreenWithNavigation
 
 @Composable
@@ -45,12 +46,11 @@ fun EvaluationContent(
     val evaluationState by viewModel.evaluationState.collectAsState()
     val timerRemaining by viewModel.timerRemaining.collectAsState()
     val scrollState = rememberScrollState()
-    val isDarkTheme by ThemeController.isDarkTheme.collectAsState()
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(if (isDarkTheme) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.primary)
+            .background(if (evaluationState.darkMode) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.primary)
             .verticalScroll(scrollState)
     ) {
         if(evaluationState.isLoading) {
@@ -61,14 +61,27 @@ fun EvaluationContent(
             )
         } else {
             // Title and position explanation text
-            HeaderContent(
-                evaluationState,
-                timerRemaining,
-                isDarkTheme,
-                onSliderChange = { viewModel.updateSliderPosition(it) },
-                onGuess = { viewModel.evaluatePosition() },
-                onContinue = { viewModel.resetForNewPosition() }
-            )
+            HeaderContent(evaluationState)
+
+            // Chess board - always visible
+            AnalysisBoard(fen = evaluationState.positionFen)
+
+            // Conditional rendering based on submission state
+            if (!evaluationState.hasSubmitted) {
+                // Pre-submission: Slider, Timer, Guess button
+                PreSubmitCard(
+                    evaluationState = evaluationState,
+                    timerRemaining = timerRemaining,
+                    onSliderChange = { viewModel.updateSliderPosition(it) },
+                    onGuess = { viewModel.evaluatePosition() },
+                )
+            } else {
+                // Post-submission: Evaluation graph, Tags, Continue button
+                PostSubmitCard(
+                    evaluationState = evaluationState,
+                    onContinue = { viewModel.resetForNewPosition() },
+                )
+            }
         }
     }
 }

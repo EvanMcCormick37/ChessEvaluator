@@ -31,8 +31,8 @@ import com.evanmccormick.chessevaluator.ui.profile.StatsScreen
 import com.evanmccormick.chessevaluator.ui.profile.StatsViewModel
 import com.evanmccormick.chessevaluator.ui.settings.SettingsViewModel
 import com.evanmccormick.chessevaluator.ui.settings.SettingsScreen
+import com.evanmccormick.chessevaluator.ui.theme.AppSettingsController
 import com.evanmccormick.chessevaluator.ui.theme.ChessEvaluatorTheme
-import com.evanmccormick.chessevaluator.ui.theme.ThemeController
 
 class MainActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.S)
@@ -40,7 +40,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             // Collect the theme state
-            val isDarkTheme = ThemeController.isDarkTheme.collectAsState().value
+            val isDarkTheme = AppSettingsController.isDarkTheme.collectAsState().value
             ChessEvaluatorTheme(darkTheme = isDarkTheme){
                 Surface(
                     modifier = Modifier.fillMaxSize(),
@@ -86,27 +86,27 @@ fun AppNavigation() {
                 val timeControl = TimeControl.allOptions.find {
                     it.durationSeconds == timeControlDuration
                 }
-                evaluationViewModel.setTimeControl(timeControl)
+                evaluationViewModel.setTimeControl(timeControl!!)
             }
             EvaluationScreen(
                 navController,
                 viewModel = evaluationViewModel
             )
         }
-        composable("review_screen"){
-            val evaluationViewModel: EvaluationViewModel = viewModel()
-            EvaluationScreen(
-                navController,
-                viewModel = evaluationViewModel
-            )
-        }
-        composable("stats_screen"){
-            val statsViewModel: StatsViewModel = viewModel()
-            StatsScreen(
-                navController,
-                statsViewModel
-            )
-        }
+//        composable("review_screen"){
+//            val evaluationViewModel: EvaluationViewModel = viewModel()
+//            EvaluationScreen(
+//                navController,
+//                viewModel = evaluationViewModel
+//            )
+//        }
+//        composable("stats_screen"){
+//            val statsViewModel: StatsViewModel = viewModel()
+//            StatsScreen(
+//                navController,
+//                statsViewModel
+//            )
+//        }
         composable("leaderboard_screen"){
             val leaderboardViewModel: LeaderboardViewModel = viewModel()
             LeaderboardScreen(

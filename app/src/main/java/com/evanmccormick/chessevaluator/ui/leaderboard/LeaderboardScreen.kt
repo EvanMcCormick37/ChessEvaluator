@@ -2,23 +2,17 @@ package com.evanmccormick.chessevaluator.ui.leaderboard
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -117,36 +111,22 @@ fun LeaderboardScreen(
                     }
 
                     // Pager for different time control leaderboards
-                    HorizontalPager(
-                        state = pagerState,
-                        modifier = Modifier.weight(1f)
-                    ) { page ->
-                        LeaderboardContent(
-                            tab = state.tabs[page],
-                            onFindMe = { viewModel.findMe() },
-                            isLoading = state.isLoading && page == state.currentTabIndex
-                        )
+                    Box(modifier = Modifier.weight(1f)) {
+                        HorizontalPager(
+                            state = pagerState,
+                            modifier = Modifier.fillMaxSize()
+                        ) { page ->
+                            LeaderboardContent(
+                                tab = state.tabs[page],
+                                userEntry = state.userEntry,
+                                isLoading = state.isLoading && page == state.currentTabIndex
+                            )
+                        }
                     }
-
-                    // Tag Filter Bar
-                    TagFilterBar(
-                        selectedTags = state.selectedTags,
-                        availableTags = state.availableTags,
-                        onAddTag = { viewModel.showTagSelector() },
-                        onRemoveTag = { viewModel.removeTag(it) }
-                    )
-
-                    // Tag selector dialog
-                    if (state.showTagSelector) {
-                        TagSelectorDialog(
-                            availableTags = state.availableTags.filter { tag ->
-                                !state.selectedTags.contains(tag)
-                            },
-                            onTagSelected = { tag ->
-                                viewModel.addTag(tag)
-                                viewModel.hideTagSelector()
-                            },
-                            onDismiss = { viewModel.hideTagSelector() }
+                    if (state.showUserInfoBox && state.userEntry != null) {
+                        UserInfoBox(
+                            entry = state.userEntry!!,
+                            backgroundColor = MaterialTheme.colorScheme.secondaryContainer,
                         )
                     }
                 } else if (state.isLoading) {
@@ -165,7 +145,7 @@ fun LeaderboardScreen(
 @Composable
 fun LeaderboardContent(
     tab: LeaderboardTab,
-    onFindMe: () -> Unit,
+    userEntry: LeaderboardEntry?,
     isLoading: Boolean
 ) {
     Box(
@@ -213,79 +193,35 @@ fun LeaderboardContent(
                     )
                 }
             } else {
-                // Find the index of the current user
-                val currentUserIndex = tab.entries.indexOfFirst { it.isCurrentUser }
                 val listState = rememberLazyListState()
-
-                // Scroll to user's position if "Find Me" was pressed
-                LaunchedEffect(currentUserIndex) {
-                    if (currentUserIndex >= 0) {
-                        listState.animateScrollToItem(
-                            index = currentUserIndex,
-                            scrollOffset = -100 // Offset to position the item more centrally
-                        )
-                    }
-                }
 
                 // Leaderboard entries
                 LazyColumn(
                     state = listState,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier
+                        .weight(1f)
                 ) {
                     itemsIndexed(tab.entries) { index, entry ->
                         LeaderboardEntryRow(
                             entry = entry,
-                            index = index
+                            index = index,
+                            isCurrentUser = userEntry != null && entry.name == userEntry.name
                         )
                     }
                 }
-            }
-        }
-
-        // Find Me Button
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(16.dp)
-        ) {
-            Button(
-                onClick = onFindMe,
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.secondary
-                )
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = "Find Me"
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Find Me")
             }
         }
     }
 }
 
 @Composable
-fun LeaderboardEntryRow(
+fun UserInfoBox(
     entry: LeaderboardEntry,
-    index: Int
+    backgroundColor: Color = MaterialTheme.colorScheme.primaryContainer,
+    rankColor: Color = MaterialTheme.colorScheme.onPrimaryContainer,
+    isCurrentUser: Boolean = true,
+    modifier: Modifier? = null
 ) {
-    // Determine background color based on whether it's an odd or even row
-    val backgroundColor = when {
-        entry.isCurrentUser -> MaterialTheme.colorScheme.primaryContainer
-        index % 2 == 0 -> ExtendedTheme.colors.rowBackgroundEven
-        else -> ExtendedTheme.colors.rowBackgroundOdd
-    }
-
-    // Special colors for medal positions
-    val rankColor = when (entry.rank) {
-        1 -> ExtendedTheme.colors.goldMedal
-        2 -> ExtendedTheme.colors.silverMedal
-        3 -> ExtendedTheme.colors.bronzeMedal
-        else -> MaterialTheme.colorScheme.onSurface
-    }
-
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -305,7 +241,7 @@ fun LeaderboardEntryRow(
         // Name
         Text(
             text = entry.name,
-            fontWeight = if (entry.isCurrentUser) FontWeight.Bold else FontWeight.Normal,
+            fontWeight = if (isCurrentUser) FontWeight.Bold else FontWeight.Normal,
             fontSize = 16.sp,
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.weight(1f)
@@ -324,103 +260,30 @@ fun LeaderboardEntryRow(
 }
 
 @Composable
-fun TagFilterBar(
-    selectedTags: List<String>,
-    availableTags: List<String>,
-    onAddTag: () -> Unit,
-    onRemoveTag: (String) -> Unit
+fun LeaderboardEntryRow(
+    entry: LeaderboardEntry,
+    index: Int,
+    isCurrentUser: Boolean
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = "Filter by Tags",
-            fontSize = 14.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(end = 8.dp)
-        )
-
-        Row(
-            modifier = Modifier
-                .weight(1f)
-                .horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            selectedTags.forEach { tag ->
-                FilterChip(
-                    selected = true,
-                    onClick = { onRemoveTag(tag) },
-                    label = { Text(tag, fontSize = 12.sp) },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
-                    ),
-                    modifier = Modifier.height(32.dp)
-                )
-            }
-        }
-
-        // Only show the add button if there are available tags not yet selected
-        if (availableTags.any { !selectedTags.contains(it) }) {
-            IconButton(
-                onClick = onAddTag,
-                modifier = Modifier.size(32.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Add Tag",
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            }
-        }
+    // Determine background color based on whether it's an odd or even row
+    val backgroundColor = when {
+        isCurrentUser -> MaterialTheme.colorScheme.primaryContainer
+        index % 2 == 0 -> ExtendedTheme.colors.rowBackgroundEven
+        else -> ExtendedTheme.colors.rowBackgroundOdd
     }
-}
 
-@Composable
-fun TagSelectorDialog(
-    availableTags: List<String>,
-    onTagSelected: (String) -> Unit,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Select a Tag") },
-        text = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp)
-            ) {
-                availableTags.forEach { tag ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onTagSelected(tag) }
-                            .padding(vertical = 12.dp, horizontal = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = tag,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    if (availableTags.indexOf(tag) < availableTags.size - 1) {
-                        HorizontalDivider(
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
-                            thickness = 0.5.dp
-                        )
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        }
+    // Special colors for medal positions
+    val rankColor = when (entry.rank) {
+        1 -> ExtendedTheme.colors.goldMedal
+        2 -> ExtendedTheme.colors.silverMedal
+        3 -> ExtendedTheme.colors.bronzeMedal
+        else -> MaterialTheme.colorScheme.onSurface
+    }
+    UserInfoBox(
+        entry = entry,
+        backgroundColor = backgroundColor,
+        rankColor = rankColor,
+        isCurrentUser = isCurrentUser
     )
+
 }

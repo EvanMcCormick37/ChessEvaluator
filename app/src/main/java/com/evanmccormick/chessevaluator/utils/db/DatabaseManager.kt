@@ -17,12 +17,16 @@ data class Position(
     val tags: List<String>,
 )
 
+data class UserInfo(
+    val username: String,
+    val elos: Map<String, Int>
+)
+
 data class LeaderboardUser(
     val id: String,
     val rank: Int,
     val username: String,
-    val elo: Int,
-    val isCurrentUser: Boolean = false
+    val elo: Int
 )
 
 class DatabaseManager @Inject constructor(
@@ -70,26 +74,33 @@ class DatabaseManager @Inject constructor(
         }
     }
 
-    suspend fun getUserElo(timeControl: Int): Int {
+    suspend fun getUserInfo(): UserInfo {
         val user = auth.currentUser
         user?.let {
             val uid = it.uid
             var documentSnapshot = db.collection("users").document(uid).get()
                 .await()
-
             if(documentSnapshot.exists()) {
+                val username = documentSnapshot.getString("username")!!
                 val elosMap = documentSnapshot.get("elos") as Map<String, Long>
-                val elo = elosMap[timeControl.toString()]!!.toInt()
-                return elo
+
+                return UserInfo(username, elosMap.mapValues { it.value.toInt() })
             } else {
                 documentSnapshot = createUser()
+                val username = documentSnapshot.getString("username")!!
                 val elosMap = documentSnapshot.get("elos") as Map<String, Long>
-                val elo = elosMap[timeControl.toString()]!!.toInt()
-                return elo
+
+                return UserInfo(username, elosMap.mapValues { it.value.toInt() })
             }
         } ?: run {
             throw Exception("Error: No user is currently logged in.")
         }
+    }
+
+    suspend fun getUserElo(timeControl: Int): Int {
+        val userInfo = getUserInfo()
+        val elo = userInfo.elos[timeControl.toString()]!!
+        return elo
     }
 
     suspend fun updateUserElo(newElo: Int, timeControl: Int) {
@@ -117,7 +128,7 @@ class DatabaseManager @Inject constructor(
 
         //Generate a random index # less than the size of the collection
         //val sizeQuerySnapshot = positionsRef.get().await()
-        val size = 1000 //Size is currently 1000
+        val size = 20000 //Size is currently 1000
 
         val randomIndex = Random.nextInt(0, size)
         val documentId = "pos${randomIndex}"
@@ -158,8 +169,7 @@ class DatabaseManager @Inject constructor(
                     id = document.id,
                     rank = index + 1, // 1-based rank
                     username = username,
-                    elo = elo,
-                    isCurrentUser = document.id == auth.currentUser?.uid
+                    elo = elo
                 )
             }
         } catch (e: Exception) {
@@ -170,15 +180,14 @@ class DatabaseManager @Inject constructor(
     }
 
     // Get a user's position on the leaderboard for a specific time control
-    suspend fun getUserLeaderboardPosition(timeControl: Int): LeaderboardUser? {
+    suspend fun getUserLeaderboardInfo(timeControl: Int): LeaderboardUser? {
         val currentUser = auth.currentUser ?: return null
 
         try {
             // First get current user's elo for this time control
-            val userDoc = db.collection("users").document(currentUser.uid).get().await()
-            val username = userDoc.getString("username") ?: "Anonymous"
-            val elosMap = userDoc.get("elos") as? Map<String, Long> ?: mapOf()
-            val userElo = elosMap[timeControl.toString()]?.toInt() ?: 1500
+            val userInfo = getUserInfo()
+            val userElo = userInfo.elos[timeControl.toString()]!!
+            val username = userInfo.username
 
             // Then count how many users have higher elo
             val higherEloCount = db.collection("users").whereGreaterThan("elos.$timeControl", userElo).count().get(AggregateSource.SERVER).await().count
@@ -190,8 +199,7 @@ class DatabaseManager @Inject constructor(
                 id = currentUser.uid,
                 rank = rank,
                 username = username,
-                elo = userElo,
-                isCurrentUser = true
+                elo = userElo
             )
         } catch (e: Exception) {
             println("Error getting user leaderboard position: ${e.message}")

@@ -124,11 +124,11 @@ fun SettingsContent(viewModel: SettingsViewModel) {
                     textColor = textColor,
                     content = {
                         ToggleSegmentedButton(
-                            options = listOf("Centipawn", "Sigmoid"),
+                            options = listOf("Raw", "Sigmoid"),
                             selectedOption = settings.evalType.name,
                             onOptionSelected = {
                                 viewModel.updateEvalType(
-                                    if (it == "Centipawn") EvalType.Centipawn else EvalType.Sigmoid
+                                    if (it == "Raw") EvalType.Raw else EvalType.Sigmoid
                                 )
                             },
                             textColor = textColor,

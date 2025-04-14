@@ -30,19 +30,6 @@ fun AppNavBar(
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        //  Profile Icon
-        if (currentRoute != "stats_screen") {
-            NavBarIcon(
-                icon = Icons.Filled.AccountCircle,
-                contentDescription = "Stats",
-                onClick = {
-                    navController.navigate("stats_screen"){
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                }
-            )
-        }
         //  Settings Icon
         if(currentRoute != "settings_screen") {
             NavBarIcon(

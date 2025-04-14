@@ -33,5 +33,3 @@ google-services.json
 # Android Profiling
 *.hprof
 app/data/
-app/src/main/java/com/evanmccormick/chessevaluator/utils/uploadPositions.js
-app/src/main/java/com/evanmccormick/chessevaluator/utils/db/uploadPositions.js

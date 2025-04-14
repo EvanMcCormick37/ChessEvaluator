@@ -1,4 +1,4 @@
-package com.evanmccormick.chessevaluator.ui.evaluation
+package com.evanmccormick.chessevaluator.ui.evaluation.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -19,8 +19,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.evanmccormick.chessevaluator.ui.evaluation.EvaluationState
 import com.evanmccormick.chessevaluator.ui.theme.ExtendedTheme
-import com.github.bhlangonijr.chesslib.Side
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
@@ -29,8 +29,6 @@ import kotlin.math.min
 @Composable
 fun PostSubmitCard(
     evaluationState: EvaluationState,
-    sideToMove: Side,
-    isDarkTheme: () -> Boolean,
     onContinue: () -> Unit
 ) {
 
@@ -55,7 +53,7 @@ fun PostSubmitCard(
                 minEval,
                 evalDifference,
                 maxEval,
-                sideToMove
+                evaluationState.sideToMove!!
             )
 
             // Position difficulty and accuracy indicator
@@ -110,7 +108,7 @@ fun PostSubmitCard(
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = if (isDarkTheme()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSecondary
+                containerColor = if (evaluationState.darkMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSecondary
             )
         ) {
             Text(text = "Continue")

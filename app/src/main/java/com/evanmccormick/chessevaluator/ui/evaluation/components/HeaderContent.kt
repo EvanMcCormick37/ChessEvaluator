@@ -1,12 +1,8 @@
-package com.evanmccormick.chessevaluator.ui.evaluation
+package com.evanmccormick.chessevaluator.ui.evaluation.components
 
-import androidx.compose.foundation.ScrollState
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -17,6 +13,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.evanmccormick.chessevaluator.ui.evaluation.EvaluationState
 import com.github.bhlangonijr.chesslib.Board
 import com.github.bhlangonijr.chesslib.Side
 import kotlin.math.abs
@@ -24,11 +21,6 @@ import kotlin.math.abs
 @Composable
 fun HeaderContent(
     evaluationState: EvaluationState,
-    timerRemaining: Int,
-    isDarkTheme: Boolean,
-    onSliderChange: (Float) -> Unit,
-    onContinue: () -> Unit,
-    onGuess: () -> Unit
 ){
     val board = remember(evaluationState.positionFen) {
         try {
@@ -41,8 +33,7 @@ fun HeaderContent(
             Board()
         }
     }
-    val sideToMove = evaluationState.sideToMove
-    val sideToMoveText = if (sideToMove == Side.WHITE) "White" else "Black"
+    val sideToMoveText = if (evaluationState.sideToMove == Side.WHITE) "White" else "Black"
     val evaluationDifference = abs(evaluationState.userEvaluation - evaluationState.evaluation)
 
     Column(
@@ -85,31 +76,5 @@ fun HeaderContent(
                     color = MaterialTheme.colorScheme.onBackground
                 )
             }
-
-        // Chess board - always visible
-        AnalysisBoard(
-            fen = evaluationState.positionFen
-        )
-
-        // Conditional rendering based on submission state
-        if (!evaluationState.hasSubmitted) {
-            // Pre-submission: Slider, Timer, Guess button
-            PreSubmitCard(
-                evaluationState = evaluationState,
-                timerRemaining = timerRemaining,
-                sideToMove!!,
-                onSliderChange = { onSliderChange(it) },
-                onGuess = { onGuess() },
-                isDarkTheme = { isDarkTheme }
-            )
-        } else {
-            // Post-submission: Evaluation graph, Tags, Continue button
-            PostSubmitCard(
-                evaluationState = evaluationState,
-                isDarkTheme = { isDarkTheme },
-                onContinue = { onContinue() },
-                sideToMove = sideToMove!!
-            )
-        }
         }
 }

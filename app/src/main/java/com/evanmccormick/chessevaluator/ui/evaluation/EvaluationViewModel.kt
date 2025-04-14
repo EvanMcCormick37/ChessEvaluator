@@ -2,28 +2,31 @@ package com.evanmccormick.chessevaluator.ui.evaluation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.evanmccormick.chessevaluator.ui.settings.EvalType
+import com.evanmccormick.chessevaluator.ui.theme.AppSettingsController
 import com.evanmccormick.chessevaluator.ui.utils.db.DatabaseManager
 import com.github.bhlangonijr.chesslib.Side
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 import kotlin.math.abs
-import kotlin.random.Random
+
+// Elo Calculation Constants
+private const val ELO_ERROR_OFFSET = 0.175f
+private const val ELO_MERIT_BONUS = 0.1f // Renamed for clarity
+private const val ELO_K_FACTOR = 100.0 // Use Double for consistency
+private const val ELO_SCALE_FACTOR = 400.0
 
 data class EvaluationState(
     val evaluationText: String = "0.0",
     val evalExplanation: String = "The position is equal",
     val positionFen: String = "", // Will be used later when integrating with backend
-    val tags: List<String> = listOf("Opening", "Closed Position", "Ray Lopez", "Queenless Middlegame"),
     val sideToMove: Side? = null,
     val evaluation: Float = 0f, // The actual evaluation from engine/database
     val sigmoidEvaluation: Float = 0.5f, // The evaluation after sigmoid
@@ -33,8 +36,12 @@ data class EvaluationState(
     val isLoading: Boolean = true,
     val positionElo: Int = 1500,
     val positionId: String = "",
+    val tags: List<String> = emptyList(),
     val userElo: Int = 1500,
     val eloTransfer: Int = 0,
+    val evalType: EvalType = AppSettingsController.evalType.value,
+    val updateElo: Boolean = AppSettingsController.updateElo.value,
+    val darkMode: Boolean = AppSettingsController.isDarkTheme.value,
 )
 
 class EvaluationViewModel : ViewModel() {
@@ -45,29 +52,27 @@ class EvaluationViewModel : ViewModel() {
     val evaluationState: StateFlow<EvaluationState> = _evaluationState.asStateFlow()
 
     // Database Handling
-    val auth = FirebaseAuth.getInstance()
-    val db = FirebaseFirestore.getInstance()
-    val dbManager = DatabaseManager(auth, db)
+    private val auth = FirebaseAuth.getInstance()
+    private val db = FirebaseFirestore.getInstance()
+    private val dbManager = DatabaseManager(auth, db)
 
     // Timer functionality
     private val _timerRemaining = MutableStateFlow(0)
     val timerRemaining: StateFlow<Int> = _timerRemaining.asStateFlow()
 
     private var timerJob: Job? = null
-    private var timeControl: TimeControl? = null
+    private lateinit var timeControl: TimeControl
 
     // Set time control from navigation parameter
-    fun setTimeControl(timeControl: TimeControl?) {
-        timeControl?.let {
-            this.timeControl = it
-            resetTimer()
-        }
+    fun setTimeControl(timeControl: TimeControl) {
+        this.timeControl = timeControl
+        resetTimer()
     }
 
     // Reset and start timer
     private fun resetTimer() {
         timerJob?.cancel()
-        timeControl?.let { tc ->
+        timeControl.let { tc ->
             _timerRemaining.value = tc.durationSeconds
             startTimer()
         }
@@ -132,9 +137,7 @@ class EvaluationViewModel : ViewModel() {
         }
     }
 
-
-
-    // Loads the position info of a random position from the FirebaseFirestore API
+    // Loads the position info of a random position from the Firebase Firestore API
     fun loadPositionFromApi() {
         viewModelScope.launch {
             _evaluationState.update { currentState ->
@@ -142,7 +145,7 @@ class EvaluationViewModel : ViewModel() {
             }
             try{
 
-                val pos = dbManager.getRandomPosition(timeControl!!.durationSeconds)
+                val pos = dbManager.getRandomPosition(timeControl.durationSeconds)
                 val sideToMove = if (pos.fen.split(" ")[1] == "w") Side.WHITE else Side.BLACK
 
                 _evaluationState.update { currentState ->
@@ -168,7 +171,7 @@ class EvaluationViewModel : ViewModel() {
 
     fun loadUserEloFromApi() {
         viewModelScope.launch {
-            val elo = dbManager.getUserElo(timeControl!!.durationSeconds)
+            val elo = dbManager.getUserElo(timeControl.durationSeconds)
             _evaluationState.update { currentState ->
                 currentState.copy(
                     userElo = elo
@@ -206,8 +209,8 @@ class EvaluationViewModel : ViewModel() {
         val newPositionElo = evaluationState.value.positionElo + eloTransfer
         val positionId = evaluationState.value.positionId
         viewModelScope.launch {
-            dbManager.updatePositionElo(positionId, newPositionElo, timeControl!!.durationSeconds)
-            dbManager.updateUserElo(newUserElo, timeControl!!.durationSeconds)
+            dbManager.updatePositionElo(positionId, newPositionElo, timeControl.durationSeconds)
+            dbManager.updateUserElo(newUserElo, timeControl.durationSeconds)
         }
         // Set hasSubmitted to true
         _evaluationState.update { currentState ->

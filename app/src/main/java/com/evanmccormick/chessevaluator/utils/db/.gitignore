@@ -1,0 +1,5 @@
+# .gitignore for the uploading positions workflow
+package-lock.json
+package.json
+uploadPositions.js
+node_modules

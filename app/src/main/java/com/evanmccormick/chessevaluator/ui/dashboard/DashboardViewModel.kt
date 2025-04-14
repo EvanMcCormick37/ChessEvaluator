@@ -33,7 +33,6 @@ class DashboardViewModel : ViewModel() {
     }
     sealed class NavigationDestination {
         data class Eval(val timeControlDuration: Int) : NavigationDestination()
-        object Stats : NavigationDestination()
         object Leaderboard : NavigationDestination()
         object Settings : NavigationDestination()
         object Donate : NavigationDestination()
