@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.evanmccormick.chessevaluator.ui.settings.EvalType
 import com.evanmccormick.chessevaluator.ui.theme.AppSettingsController
 import com.evanmccormick.chessevaluator.ui.utils.db.DatabaseManager
+import com.evanmccormick.chessevaluator.ui.utils.db.Position
 import com.github.bhlangonijr.chesslib.Side
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -16,38 +17,52 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.math.abs
+import kotlin.math.exp
+import kotlin.math.ln
+import kotlin.math.pow
 
 // Elo Calculation Constants
-private const val ELO_ERROR_OFFSET = 0.175f
-private const val ELO_MERIT_BONUS = 0.1f // Renamed for clarity
-private const val ELO_K_FACTOR = 100.0 // Use Double for consistency
+private const val ELO_ERROR_OFFSET = 0.18f
+private const val ELO_MERIT_BONUS = 0.1f
+private const val ELO_K_FACTOR = 100.0
 private const val ELO_SCALE_FACTOR = 400.0
 
+data class EvalSettings(
+    val evalType: EvalType,
+    val updateElo: Boolean,
+    val darkMode: Boolean,
+)
+
 data class EvaluationState(
-    val evaluationText: String = "0.0",
-    val evalExplanation: String = "The position is equal",
-    val positionFen: String = "", // Will be used later when integrating with backend
-    val sideToMove: Side? = null,
-    val evaluation: Float = 0f, // The actual evaluation from engine/database
-    val sigmoidEvaluation: Float = 0.5f, // The evaluation after sigmoid
-    val userEvaluation: Float = 0f, // The user's guess
-    val userSigmoidEvaluation: Float = 0.5f, // The user's guess after sigmoid
-    val hasSubmitted: Boolean = false,
-    val isLoading: Boolean = true,
-    val positionElo: Int = 1500,
-    val positionId: String = "",
-    val tags: List<String> = emptyList(),
-    val userElo: Int = 1500,
-    val eloTransfer: Int = 0,
-    val evalType: EvalType = AppSettingsController.evalType.value,
-    val updateElo: Boolean = AppSettingsController.updateElo.value,
-    val darkMode: Boolean = AppSettingsController.isDarkTheme.value,
+    val pos: Position,
+    val userEvaluation: Float,
+    val hasSubmitted: Boolean,
+    val isLoading: Boolean,
+    val userElo: Int,
+    val eloTransfer: Int,
+    val settings: EvalSettings,
 )
 
 class EvaluationViewModel : ViewModel() {
 
     private val _evaluationState = MutableStateFlow(EvaluationState(
-        positionFen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1",
+        pos = Position(
+            id = "",
+            fen = "",
+            eval = 0f,
+            elo = 1500,
+            tags = emptyList()
+        ),
+        userEvaluation = 0f, //Not necessary in state?
+        hasSubmitted = false,
+        isLoading = true,
+        userElo = 1500,
+        eloTransfer = 0,
+        settings = EvalSettings(
+            evalType = AppSettingsController.evalType.value,
+            updateElo = AppSettingsController.updateElo.value,
+            darkMode = AppSettingsController.isDarkTheme.value
+        )
     ))
     val evaluationState: StateFlow<EvaluationState> = _evaluationState.asStateFlow()
 
@@ -97,30 +112,29 @@ class EvaluationViewModel : ViewModel() {
     fun updateSliderPosition(position: Float) {
         _evaluationState.update { currentState ->
             val clampedPosition = position.coerceIn(0.001f, 0.999f)
-            val userEval = sigmoidToEval(clampedPosition, currentState.sideToMove!!)
+            val sideToMove = getSideToMove(currentState.pos.fen)
+            val userEval = sigmoidToEval(clampedPosition, sideToMove)
             currentState.copy(
-                evaluationText = String.format("%.2f", userEval),
                 userEvaluation = userEval,
-                userSigmoidEvaluation = clampedPosition //Sigmoid eval is the same as the slider position
             )
         }
     }
 
-    fun sigmoidToEval(position: Float, sideToMove: Side, stretch: Float = 1f): Float {
+    fun sigmoidToEval(position: Float, sideToMove: Side, stretch: Float = 2f): Float {
         // Prevent division by zero or log of negative number
         val clampedPosition = position.coerceIn(0.001f, 0.999f)
 
         // Inverse sigmoid: -ln(1/y - 1). Stretch multiplies the Eval output relative to the Sigmoid input
-        val eval = -stretch*Math.log((1f / clampedPosition - 1).toDouble()).toFloat()
-        return if (sideToMove == Side.WHITE) eval else -eval
+        val result = -stretch* ln((1f / clampedPosition - 1).toDouble()).toFloat()
+        return if (sideToMove == Side.WHITE) result else -result
     }
 
     fun evalToSigmoid(value: Float, sideToMove: Side, squish: Float = 0.5f): Float {
         // Sigmoid function: 1 / (1 + e^(-x)). Squish shrinks the output range relative to the Eval input
-        val result = (1f / (1f + Math.exp(-((if (sideToMove == Side.BLACK) -value else value)*squish).toDouble()))).toFloat()
+        val result = (1f / (1f + exp(-((if (sideToMove == Side.BLACK) -value else value) * squish).toDouble()))).toFloat()
 
         // Optional: ensure output is strictly in [0,1]
-        return result.coerceIn(0.001f, 0999f)
+        return result.coerceIn(0.001f, 0.999f)
     }
 
     fun getEvalExplanation(evaluation: Float): String {
@@ -150,15 +164,10 @@ class EvaluationViewModel : ViewModel() {
 
                 _evaluationState.update { currentState ->
                     currentState.copy(
-                        positionId = pos.id,
-                        positionFen = pos.fen,
-                        evaluation = pos.eval,
-                        sideToMove = sideToMove,
-                        sigmoidEvaluation = evalToSigmoid(pos.eval, sideToMove),
-                        positionElo = pos.elo,
-                        tags = pos.tags,
-                        evalExplanation = getEvalExplanation(pos.eval),
-                        isLoading = false
+                        pos = pos,
+                        isLoading = false,
+                        userEvaluation = 0f,
+                        hasSubmitted = false,
                     )
                 }
             } catch(e: Exception) {
@@ -183,11 +192,11 @@ class EvaluationViewModel : ViewModel() {
     // Calculate elo transfer based on user's guess, returns position's change in Elo
     fun calculateEloTransfer(userElo: Int, positionElo: Int, evaluationDifferenceSigmoid: Float): Int {
         fun multiplier(ratingA: Int, ratingB: Int): Double {
-            return 1.0 / (1.0 + Math.pow(10.0, (ratingB - ratingA) / 400.0))
+            return 1.0 / (1.0 + 10.0.pow((ratingB - ratingA) / ELO_SCALE_FACTOR))
         }
-        val error = evaluationDifferenceSigmoid - 0.175f
-        val merit = 0.1
-        val k = 100
+        val error = evaluationDifferenceSigmoid - ELO_ERROR_OFFSET
+        val merit = ELO_MERIT_BONUS
+        val k = ELO_K_FACTOR
         var multiplier = 0.0
         if (error > 0) {
             multiplier = multiplier(userElo, positionElo)
@@ -202,22 +211,31 @@ class EvaluationViewModel : ViewModel() {
         // Stop the timer when evaluation is submitted
         timerJob?.cancel()
 
+        // Calculate the elo transfer based on the user's guess
+        val sideToMove = getSideToMove(evaluationState.value.pos.fen)
+        val sliderEval = evalToSigmoid(evaluationState.value.pos.eval, sideToMove)
+        val userSliderEval = evalToSigmoid(evaluationState.value.userEvaluation, sideToMove)
+
         // Update the position's elo, and the user's elo
-        val evalDiffSigmoid = abs(evaluationState.value.userSigmoidEvaluation - evaluationState.value.sigmoidEvaluation)
-        val eloTransfer = calculateEloTransfer(evaluationState.value.userElo, evaluationState.value.positionElo, evalDiffSigmoid)
+        val evalDiffSigmoid = abs(userSliderEval - sliderEval)
+        val eloTransfer = calculateEloTransfer(evaluationState.value.userElo, evaluationState.value.pos.elo, evalDiffSigmoid)
         val newUserElo = evaluationState.value.userElo - eloTransfer
-        val newPositionElo = evaluationState.value.positionElo + eloTransfer
-        val positionId = evaluationState.value.positionId
+        val newPosElo = evaluationState.value.pos.elo + eloTransfer
+        val posId = evaluationState.value.pos.id
+
         viewModelScope.launch {
-            dbManager.updatePositionElo(positionId, newPositionElo, timeControl.durationSeconds)
+            dbManager.updatePositionElo(posId, newPosElo, timeControl.durationSeconds)
             dbManager.updateUserElo(newUserElo, timeControl.durationSeconds)
         }
+
         // Set hasSubmitted to true
         _evaluationState.update { currentState ->
             currentState.copy(
-                eloTransfer = eloTransfer,
-                positionElo = newPositionElo,
+                pos = currentState.pos.copy(
+                    elo = newPosElo
+                ),
                 userElo = newUserElo,
+                eloTransfer = eloTransfer,
                 hasSubmitted = true
             )
         }
@@ -226,20 +244,15 @@ class EvaluationViewModel : ViewModel() {
     // Reset the evaluation state for a new position
     fun resetForNewPosition() {
         loadPositionFromApi()
-        loadUserEloFromApi()
-        _evaluationState.update { currentState ->
-            currentState.copy(
-                evaluationText = "0.0",
-                userEvaluation = 0f,
-                userSigmoidEvaluation = 0.5f,
-                hasSubmitted = false,
-                eloTransfer = 0,
-                )
-        }
     }
 
     override fun onCleared() {
         super.onCleared()
         timerJob?.cancel()
+    }
+
+    fun getSideToMove(fen: String): Side {
+        if (fen.isBlank()) return Side.WHITE
+        return if (fen.split(" ")[1] == "w") Side.WHITE else Side.BLACK
     }
 }

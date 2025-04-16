@@ -19,15 +19,20 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.evanmccormick.chessevaluator.ui.evaluation.EvaluationState
+import com.evanmccormick.chessevaluator.ui.evaluation.EvaluationViewModel
 import com.evanmccormick.chessevaluator.ui.theme.ExtendedTheme
+import com.github.bhlangonijr.chesslib.Side
 
 @Composable
 fun PreSubmitCard(
     evaluationState: EvaluationState,
+    viewModel: EvaluationViewModel,
     timerRemaining: Int,
+    sideToMove: Side,
     onSliderChange: (Float) -> Unit,
     onGuess: () -> Unit,
 ) {
+    val evaluationText = String.format("%.2f", evaluationState.userEvaluation)
     Column(
         modifier = Modifier
             .fillMaxWidth(),
@@ -42,7 +47,8 @@ fun PreSubmitCard(
         ) {
             PreSubmitSlider(
                 evaluationState,
-                evaluationState.sideToMove!!,
+                viewModel,
+                sideToMove,
                 onSliderChange
             )
 
@@ -50,14 +56,14 @@ fun PreSubmitCard(
                 modifier = Modifier
                     .padding(top = 8.dp),
                 shape = RoundedCornerShape(8.dp),
-                color = if(evaluationState.evaluationText.toFloat() > 0) ExtendedTheme.colors.evaluationWhite else ExtendedTheme.colors.evaluationBlack,
+                color = if(evaluationState.userEvaluation.toFloat() > 0) ExtendedTheme.colors.evaluationWhite else ExtendedTheme.colors.evaluationBlack,
                 tonalElevation = 1.dp
             ) {
                 Text(
-                    text = evaluationState.evaluationText,
+                    text = evaluationText,
                     modifier = Modifier
                         .padding(horizontal = 16.dp, vertical = 8.dp),
-                    color = if(evaluationState.evaluationText.toFloat() > 0) ExtendedTheme.colors.evaluationBlack else ExtendedTheme.colors.evaluationWhite,
+                    color = if(evaluationText.toFloat() > 0) ExtendedTheme.colors.evaluationBlack else ExtendedTheme.colors.evaluationWhite,
                     style = MaterialTheme.typography.bodyLarge
                 )
             }
@@ -110,7 +116,7 @@ fun PreSubmitCard(
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = if (evaluationState.darkMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSecondary
+                containerColor = if (evaluationState.settings.darkMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSecondary
             )
         ) {
             Text(text = "Guess")

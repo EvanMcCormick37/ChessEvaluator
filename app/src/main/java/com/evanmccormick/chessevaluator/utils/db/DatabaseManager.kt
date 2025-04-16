@@ -128,7 +128,7 @@ class DatabaseManager @Inject constructor(
 
         //Generate a random index # less than the size of the collection
         //val sizeQuerySnapshot = positionsRef.get().await()
-        val size = 20000 //Size is currently 1000
+        val size = 1000 //Size is currently 1000
 
         val randomIndex = Random.nextInt(0, size)
         val documentId = "pos${randomIndex}"

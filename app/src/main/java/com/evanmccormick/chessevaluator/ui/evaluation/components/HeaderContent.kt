@@ -14,27 +14,19 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.evanmccormick.chessevaluator.ui.evaluation.EvaluationState
-import com.github.bhlangonijr.chesslib.Board
+import com.evanmccormick.chessevaluator.ui.evaluation.EvaluationViewModel
 import com.github.bhlangonijr.chesslib.Side
 import kotlin.math.abs
 
 @Composable
 fun HeaderContent(
     evaluationState: EvaluationState,
+    viwModel: EvaluationViewModel,
+    sideToMove: Side
 ){
-    val board = remember(evaluationState.positionFen) {
-        try {
-            Board().apply {
-                loadFromFen(evaluationState.positionFen.ifEmpty {
-                    "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
-                })
-            }
-        } catch (e: Exception) {
-            Board()
-        }
-    }
-    val sideToMoveText = if (evaluationState.sideToMove == Side.WHITE) "White" else "Black"
-    val evaluationDifference = abs(evaluationState.userEvaluation - evaluationState.evaluation)
+    val evalExplanation = remember { viwModel.getEvalExplanation(evaluationState.pos.eval) }
+    val sideToMoveText = if (sideToMove == Side.WHITE) "White" else "Black"
+    val evaluationDifference = abs(evaluationState.userEvaluation - evaluationState.pos.eval)
 
     Column(
         modifier = Modifier
@@ -45,7 +37,7 @@ fun HeaderContent(
             if (evaluationState.hasSubmitted) {
                 // Show evaluation result after submission
                 Text(
-                    text = "${evaluationState.evalExplanation}, ${evaluationState.evaluation}.",
+                    text = "${evalExplanation}, ${evaluationState.pos.eval}.",
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground
@@ -59,6 +51,11 @@ fun HeaderContent(
 
                 Text(
                     text = if (evaluationDifference > 0) "You were off by ${String.format("%.2f", evaluationDifference)}." else "You are correct!",
+                    fontSize = 16.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "Position Id: ${evaluationState.pos.id}",
                     fontSize = 16.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

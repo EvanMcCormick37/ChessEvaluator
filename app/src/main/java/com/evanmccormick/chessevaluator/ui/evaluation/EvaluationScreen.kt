@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -28,6 +29,7 @@ fun EvaluationScreen(
     viewModel: EvaluationViewModel
 ) {
     LaunchedEffect(key1 = true) {
+        viewModel.loadUserEloFromApi()
         viewModel.resetForNewPosition()
     }
 
@@ -46,11 +48,12 @@ fun EvaluationContent(
     val evaluationState by viewModel.evaluationState.collectAsState()
     val timerRemaining by viewModel.timerRemaining.collectAsState()
     val scrollState = rememberScrollState()
+    val sideToMove = remember { viewModel.getSideToMove(evaluationState.pos.fen) }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(if (evaluationState.darkMode) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.primary)
+            .background(if (evaluationState.settings.darkMode) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.primary)
             .verticalScroll(scrollState)
     ) {
         if(evaluationState.isLoading) {
@@ -61,24 +64,32 @@ fun EvaluationContent(
             )
         } else {
             // Title and position explanation text
-            HeaderContent(evaluationState)
+            HeaderContent(
+                evaluationState,
+                viewModel,
+                sideToMove
+            )
 
             // Chess board - always visible
-            AnalysisBoard(fen = evaluationState.positionFen)
+            AnalysisBoard(fen = evaluationState.pos.fen)
 
             // Conditional rendering based on submission state
             if (!evaluationState.hasSubmitted) {
                 // Pre-submission: Slider, Timer, Guess button
                 PreSubmitCard(
-                    evaluationState = evaluationState,
-                    timerRemaining = timerRemaining,
+                    evaluationState,
+                    viewModel,
+                    timerRemaining,
+                    sideToMove,
                     onSliderChange = { viewModel.updateSliderPosition(it) },
                     onGuess = { viewModel.evaluatePosition() },
                 )
             } else {
                 // Post-submission: Evaluation graph, Tags, Continue button
                 PostSubmitCard(
-                    evaluationState = evaluationState,
+                    evaluationState,
+                    viewModel,
+                    sideToMove,
                     onContinue = { viewModel.resetForNewPosition() },
                 )
             }

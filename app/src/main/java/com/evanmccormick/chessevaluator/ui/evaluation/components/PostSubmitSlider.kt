@@ -9,14 +9,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.evanmccormick.chessevaluator.ui.theme.ExtendedTheme
-import kotlin.math.abs
 import androidx.compose.ui.graphics.Color
-import com.evanmccormick.chessevaluator.ui.evaluation.EvaluationState
 import com.github.bhlangonijr.chesslib.Side
 
 @Composable
 fun PostSubmitSlider(
-    evaluationState: EvaluationState,
     minEval: Float,
     evalDifference: Float,
     maxEval: Float,
@@ -54,7 +51,7 @@ fun PostSubmitSlider(
                     if (evalDifference > 0) {
                         Box(
                             modifier = Modifier
-                                .weight(abs(evaluationState.sigmoidEvaluation - evaluationState.userSigmoidEvaluation))
+                                .weight(maxEval-minEval)
                                 .fillMaxHeight()
                                 .background(when{
                                     evalDifference < 0.125f -> Color.Green

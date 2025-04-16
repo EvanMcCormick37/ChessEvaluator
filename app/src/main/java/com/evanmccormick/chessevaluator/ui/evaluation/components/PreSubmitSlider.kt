@@ -18,15 +18,18 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import com.evanmccormick.chessevaluator.ui.evaluation.EvaluationState
+import com.evanmccormick.chessevaluator.ui.evaluation.EvaluationViewModel
 import com.evanmccormick.chessevaluator.ui.theme.ExtendedTheme
 import com.github.bhlangonijr.chesslib.Side
 
 @Composable
 fun PreSubmitSlider(
     evaluationState: EvaluationState,
+    viewModel: EvaluationViewModel,
     sideToMove: Side,
     onSliderChange: (Float) -> Unit
 ){
+    val userSliderPosition = viewModel.evalToSigmoid(evaluationState.userEvaluation, viewModel.getSideToMove(evaluationState.pos.fen))
     // Custom Slider with black and white sides
     Box(
         modifier = Modifier
@@ -41,13 +44,13 @@ fun PreSubmitSlider(
         ) {
             Box(
                 modifier = Modifier
-                    .weight(evaluationState.userSigmoidEvaluation)
+                    .weight(userSliderPosition)
                     .fillMaxHeight()
                     .background(if (sideToMove == Side.WHITE) ExtendedTheme.colors.evaluationWhite else ExtendedTheme.colors.evaluationBlack)
             )
             Box(
                 modifier = Modifier
-                    .weight(1f - evaluationState.userSigmoidEvaluation)
+                    .weight(1f - userSliderPosition)
                     .fillMaxHeight()
                     .background(if (sideToMove == Side.WHITE) ExtendedTheme.colors.evaluationBlack else ExtendedTheme.colors.evaluationWhite)
             )
@@ -55,7 +58,7 @@ fun PreSubmitSlider(
 
         // Slider
         Slider(
-            value = evaluationState.userSigmoidEvaluation,
+            value = userSliderPosition,
             onValueChange = onSliderChange,
             modifier = Modifier
                 .fillMaxWidth()
