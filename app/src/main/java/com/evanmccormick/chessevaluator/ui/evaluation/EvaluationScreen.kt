@@ -50,13 +50,17 @@ fun EvaluationContent(
     val scrollState = rememberScrollState()
     val sideToMove = viewModel.getSideToMove(evaluationState.pos.fen)
 
+    val trueSliderEvaluation =
+        remember { viewModel.evalToSigmoid(evaluationState.pos.eval, sideToMove) }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(if (evaluationState.settings.darkMode) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.primary)
             .verticalScroll(scrollState)
+            .padding(top = 48.dp)
     ) {
-        if(evaluationState.isLoading) {
+        if (evaluationState.isLoading) {
             CircularProgressIndicator(
                 modifier = Modifier
                     .align(Alignment.CenterHorizontally)
@@ -77,20 +81,27 @@ fun EvaluationContent(
             if (!evaluationState.hasSubmitted) {
                 // Pre-submission: Slider, Timer, Guess button
                 PreSubmitCard(
-                    evaluationState,
-                    viewModel,
                     timerRemaining,
                     sideToMove,
-                    onSliderChange = { viewModel.updateSliderPosition(it) },
-                    onGuess = { viewModel.evaluatePosition() },
+                    evaluationState.userEvaluation,
+                    evaluationState.settings.darkMode,
+                    { eval, side -> viewModel.evalToSigmoid(eval, side) },
+                    { viewModel.updateSliderPosition(it) },
+                    { viewModel.evaluatePosition() },
                 )
             } else {
                 // Post-submission: Evaluation graph, Tags, Continue button
                 PostSubmitCard(
-                    evaluationState,
-                    viewModel,
+                    evaluationState.pos,
                     sideToMove,
-                    onContinue = { viewModel.resetForNewPosition() },
+                    evaluationState.userEvaluation,
+                    trueSliderEvaluation,
+                    evaluationState.eloTransfer,
+                    evaluationState.userElo,
+                    evaluationState.settings.darkMode,
+                    evaluationState.settings.updateElo,
+                    { eval, side -> viewModel.evalToSigmoid(eval, side) },
+                    { viewModel.resetForNewPosition() },
                 )
             }
         }

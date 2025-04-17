@@ -66,14 +66,15 @@ fun SettingsContent(viewModel: SettingsViewModel) {
                     textColor = textColor,
                     content = {
                         Row(
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
                         ) {
                             OutlinedTextField(
                                 value = settings.username,
                                 onValueChange = { viewModel.updateUsername(it) },
                                 modifier = Modifier
                                     .height(56.dp)
-                                    .width(120.dp),
+                                    .weight(1f), // Use weight instead of fixed width
                                 colors = OutlinedTextFieldDefaults.colors(
                                     focusedContainerColor = textFieldBackgroundColor,
                                     unfocusedContainerColor = textFieldBackgroundColor,
@@ -85,7 +86,7 @@ fun SettingsContent(viewModel: SettingsViewModel) {
                                 singleLine = true
                             )
 
-                            Spacer(modifier = Modifier.width(8.dp))
+                            Spacer(modifier = Modifier.width(16.dp)) // Increased spacing
 
                             Button(
                                 onClick = { viewModel.updateUsernameInDatabase(settings.username) },
@@ -97,7 +98,6 @@ fun SettingsContent(viewModel: SettingsViewModel) {
                     }
                 )
             }
-
             // Display Settings Section
             SettingsSection(title = "Display Settings", textColor = textColor) {
                 // Dark Mode Setting
@@ -116,28 +116,7 @@ fun SettingsContent(viewModel: SettingsViewModel) {
                 )
             }
 
-            // Evaluation Settings Section
             SettingsSection(title = "Evaluation Settings", textColor = textColor) {
-                // Eval Type Setting
-                SettingRow(
-                    label = "Eval",
-                    textColor = textColor,
-                    content = {
-                        ToggleSegmentedButton(
-                            options = listOf("Raw", "Sigmoid"),
-                            selectedOption = settings.evalType.name,
-                            onOptionSelected = {
-                                viewModel.updateEvalType(
-                                    if (it == "Raw") EvalType.Raw else EvalType.Sigmoid
-                                )
-                            },
-                            textColor = textColor,
-                            backgroundColor = textFieldBackgroundColor
-                        )
-                    }
-                )
-
-                // Update Elo Setting
                 SettingRow(
                     label = "Update Elo (Ranked Mode)",
                     textColor = textColor,

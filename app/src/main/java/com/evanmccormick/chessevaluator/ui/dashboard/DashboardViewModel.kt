@@ -20,10 +20,10 @@ class DashboardViewModel : ViewModel() {
     val selectedTimeControl: StateFlow<TimeControl?> = _selectedTimeControl.asStateFlow()
 
     // Function to set the selected time control and navigate
-    fun navigateToEvalWithTimeControl(timeControl: TimeControl) {
+    fun navigateWithTimeControlTo(navigationDestination: (Int) -> NavigationDestination, timeControl: TimeControl) {
         viewModelScope.launch {
             _selectedTimeControl.value = timeControl
-            navigateTo(NavigationDestination.Eval(timeControl.durationSeconds))
+            navigateTo(navigationDestination(timeControl.durationSeconds))
         }
     }
     fun navigateTo(destination: NavigationDestination) {
@@ -33,6 +33,7 @@ class DashboardViewModel : ViewModel() {
     }
     sealed class NavigationDestination {
         data class Eval(val timeControlDuration: Int) : NavigationDestination()
+        data class Survival(val timeControlDuration: Int) : NavigationDestination()
         object Leaderboard : NavigationDestination()
         object Settings : NavigationDestination()
         object Donate : NavigationDestination()

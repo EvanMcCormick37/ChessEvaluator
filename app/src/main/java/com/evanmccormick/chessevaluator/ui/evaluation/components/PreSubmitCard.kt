@@ -18,21 +18,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.evanmccormick.chessevaluator.ui.evaluation.EvaluationState
-import com.evanmccormick.chessevaluator.ui.evaluation.EvaluationViewModel
 import com.evanmccormick.chessevaluator.ui.theme.ExtendedTheme
 import com.github.bhlangonijr.chesslib.Side
 
 @Composable
 fun PreSubmitCard(
-    evaluationState: EvaluationState,
-    viewModel: EvaluationViewModel,
     timerRemaining: Int,
     sideToMove: Side,
+    userEvaluation: Float,
+    darkMode: Boolean,
+    evalToSigmoid: (Float, Side) -> Float,
     onSliderChange: (Float) -> Unit,
     onGuess: () -> Unit,
 ) {
-    val evaluationText = String.format("%.2f", evaluationState.userEvaluation)
+    val evaluationText = String.format("%.2f", userEvaluation)
+    val userSliderPosition = evalToSigmoid(userEvaluation, sideToMove)
     Column(
         modifier = Modifier
             .fillMaxWidth(),
@@ -46,9 +46,8 @@ fun PreSubmitCard(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             PreSubmitSlider(
-                evaluationState,
-                viewModel,
                 sideToMove,
+                userSliderPosition,
                 onSliderChange
             )
 
@@ -56,7 +55,7 @@ fun PreSubmitCard(
                 modifier = Modifier
                     .padding(top = 8.dp),
                 shape = RoundedCornerShape(8.dp),
-                color = if(evaluationState.userEvaluation.toFloat() > 0) ExtendedTheme.colors.evaluationWhite else ExtendedTheme.colors.evaluationBlack,
+                color = if(userEvaluation.toFloat() > 0) ExtendedTheme.colors.evaluationWhite else ExtendedTheme.colors.evaluationBlack,
                 tonalElevation = 1.dp
             ) {
                 Text(
@@ -116,7 +115,7 @@ fun PreSubmitCard(
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = if (evaluationState.settings.darkMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSecondary
+                containerColor = if (darkMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSecondary
             )
         ) {
             Text(text = "Guess")

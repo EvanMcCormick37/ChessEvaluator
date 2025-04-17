@@ -19,10 +19,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.evanmccormick.chessevaluator.ui.evaluation.EvaluationState
-import com.evanmccormick.chessevaluator.ui.evaluation.EvaluationViewModel
 import com.evanmccormick.chessevaluator.ui.theme.ExtendedTheme
-import androidx.compose.runtime.remember
+import com.evanmccormick.chessevaluator.ui.utils.db.Position
 import com.github.bhlangonijr.chesslib.Side
 import kotlin.math.abs
 import kotlin.math.max
@@ -31,18 +29,24 @@ import kotlin.math.min
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun PostSubmitCard(
-    evaluationState: EvaluationState,
-    viewModel: EvaluationViewModel,
+    pos: Position,
     sideToMove: Side,
+    userEvaluation: Float,
+    trueSliderEvaluation: Float,
+    eloTransfer: Int,
+    userElo: Int,
+    darkMode: Boolean,
+    updateElo: Boolean,
+    evalToSigmoid: (Float, Side) -> Float,
     onContinue: () -> Unit
 ) {
-    val sliderEvaluation = remember { viewModel.evalToSigmoid(evaluationState.pos.eval, sideToMove) }
-    val userSliderPosition = viewModel.evalToSigmoid(evaluationState.userEvaluation, sideToMove)
 
-    val minEval = min(sliderEvaluation, userSliderPosition)
-    val maxEval = max(sliderEvaluation, userSliderPosition)
-    val evalDifference = abs(maxEval - minEval)
-    val eloTransferGood = evaluationState.eloTransfer < 0 //Elo transfer is categorized in terms of position elo gain/loss. This tracks user gain/loss
+    val userSliderPosition = evalToSigmoid(userEvaluation, sideToMove)
+
+    val minEval = min(trueSliderEvaluation, userSliderPosition)
+    val maxEval = max(trueSliderEvaluation, userSliderPosition)
+    val eloTransferGood =
+        eloTransfer < 0 //Elo transfer is categorized in terms of position elo gain/loss. This tracks user gain/loss
     Column(
         modifier = Modifier
             .fillMaxWidth(),
@@ -57,31 +61,32 @@ fun PostSubmitCard(
         ) {
             PostSubmitSlider(
                 minEval,
-                evalDifference,
                 maxEval,
                 sideToMove
             )
 
-            // Position difficulty and accuracy indicator
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Tag(
-                    text = "User Elo ${if (eloTransferGood) "+" else ""}${-evaluationState.eloTransfer}: ${evaluationState.userElo}",
-                    color = if (eloTransferGood) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.secondaryContainer
-                )
-                Tag(
-                    text = "Position Elo ${if (eloTransferGood) "" else "+"}${evaluationState.eloTransfer}: ${evaluationState.pos.elo}",
-                    color = MaterialTheme.colorScheme.secondaryContainer
-                )
+            if (updateElo) {
+                // Elo Updates
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Tag(
+                        text = "User Elo ${if (eloTransferGood) "+" else ""}${-eloTransfer}: ${userElo}",
+                        color = if (eloTransferGood) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.secondaryContainer
+                    )
+                    Tag(
+                        text = "Position Elo ${if (eloTransferGood) "" else "+"}${eloTransfer}: ${pos.elo}",
+                        color = MaterialTheme.colorScheme.secondaryContainer
+                    )
+                }
             }
         }
 
         // Tags Section
-        if (!evaluationState.pos.tags.isEmpty()) {
+        if (!pos.tags.isEmpty()) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -99,7 +104,7 @@ fun PostSubmitCard(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     maxItemsInEachRow = 3
                 ) {
-                    for (tag in evaluationState.pos.tags) {
+                    for (tag in pos.tags) {
                         Tag(tag)
                     }
                 }
@@ -114,7 +119,7 @@ fun PostSubmitCard(
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = if (evaluationState.settings.darkMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSecondary
+                containerColor = if (darkMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSecondary
             )
         ) {
             Text(text = "Continue")

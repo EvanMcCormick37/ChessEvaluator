@@ -49,7 +49,7 @@ class DatabaseManager @Inject constructor(
                 "300" to initialElo,
             )
             val userEloData = hashMapOf(
-                "username" to (user.displayName ?: "User_${uid.substring(0,6)}"),
+                "username" to (user.displayName ?: "User_${uid.substring(0, 6)}"),
                 "elos" to elosMap
             )
 
@@ -80,7 +80,7 @@ class DatabaseManager @Inject constructor(
             val uid = it.uid
             var documentSnapshot = db.collection("users").document(uid).get()
                 .await()
-            if(documentSnapshot.exists()) {
+            if (documentSnapshot.exists()) {
                 val username = documentSnapshot.getString("username")!!
                 val elosMap = documentSnapshot.get("elos") as Map<String, Long>
 
@@ -106,14 +106,16 @@ class DatabaseManager @Inject constructor(
     suspend fun updateUserElo(newElo: Int, timeControl: Int) {
         val user = auth.currentUser
         val fieldPath = "elos.${timeControl}"
-        try { user?.let {
-            val uid = it.uid
-            db.collection("users").document(uid).update(fieldPath, newElo)
-                .await()
-        } ?: run {
-            // Handle the case where there is no user
-            throw Exception("Error: No user is currently logged in.")
-        } } catch (e: Exception) {
+        try {
+            user?.let {
+                val uid = it.uid
+                db.collection("users").document(uid).update(fieldPath, newElo)
+                    .await()
+            } ?: run {
+                // Handle the case where there is no user
+                throw Exception("Error: No user is currently logged in.")
+            }
+        } catch (e: Exception) {
             print("Error updating user elo: ${e.message}")
         }
     }
@@ -123,12 +125,8 @@ class DatabaseManager @Inject constructor(
         db.collection("positions").document(id).update(fieldPath, newElo).await()
     }
 
-    suspend fun getRandomPosition(timeControl: Int ): Position {
+    suspend fun getRandomPosition(timeControl: Int, size: Int = 1000): Position {
         val positionsRef = db.collection("positions")
-
-        //Generate a random index # less than the size of the collection
-        //val sizeQuerySnapshot = positionsRef.get().await()
-        val size = 1000 //Size is currently 1000
 
         val randomIndex = Random.nextInt(0, size)
         val documentId = "pos${randomIndex}"
@@ -137,7 +135,7 @@ class DatabaseManager @Inject constructor(
         val document = positionsRef.document(documentId).get().await()
         val id = document.id
         val fen = document.getString("fen")!!
-        val eval = document.getDouble("eval")!!.toFloat()/100
+        val eval = document.getDouble("eval")!!.toFloat() / 100
 
         // Get the elos map and extract elo for the current time control
         val elosMap = document.get("elos") as Map<String, Long>
@@ -147,14 +145,51 @@ class DatabaseManager @Inject constructor(
         return Position(id, fen, eval, elo, tags)
     }
 
-    // Leaderboard functions
+    suspend fun getPositionInEloRange(minElo: Int, maxElo: Int, timeControl: Int): Position {
+        val positionsRef = db.collection("positions")
+        val timeControlStr = timeControl.toString()
+
+        val query = positionsRef
+            .whereGreaterThanOrEqualTo("elos.$timeControlStr", minElo)
+            .whereLessThanOrEqualTo("elos.$timeControlStr", maxElo)
+
+        // Execute the query
+        val querySnapshot = query.get().await()
+
+        if (querySnapshot.isEmpty) {
+            // If no matching positions, fall back to random position
+            return getRandomPosition(timeControl)
+        }
+
+        // Get the total count of matching documents
+        val matchingCount = querySnapshot.size()
+
+        // Select a random document from the results
+        val randomIndex = Random.nextInt(0, matchingCount)
+        val document = querySnapshot.documents[randomIndex]
+
+        // Extract position data
+        val id = document.id
+        val fen = document.getString("fen")!!
+        val eval = document.getDouble("eval")!!.toFloat() / 100
+        val elosMap = document.get("elos") as Map<String, Long>
+        val elo = elosMap[timeControlStr]!!.toInt()
+        val tags = document.get("tags") as List<String>
+
+        return Position(id, fen, eval, elo, tags)
+    }
+
+// Leaderboard functions
 
     suspend fun getLeaderboard(timeControl: Int, limit: Int = 30): List<LeaderboardUser> {
         try {
             // Query users collection, ordered by the specific timeControl elo
             val usersRef = db.collection("users")
             val querySnapshot = usersRef
-                .orderBy("elos.$timeControl", com.google.firebase.firestore.Query.Direction.DESCENDING)
+                .orderBy(
+                    "elos.$timeControl",
+                    com.google.firebase.firestore.Query.Direction.DESCENDING
+                )
                 .limit(limit.toLong())
                 .get()
                 .await()
@@ -190,7 +225,9 @@ class DatabaseManager @Inject constructor(
             val username = userInfo.username
 
             // Then count how many users have higher elo
-            val higherEloCount = db.collection("users").whereGreaterThan("elos.$timeControl", userElo).count().get(AggregateSource.SERVER).await().count
+            val higherEloCount =
+                db.collection("users").whereGreaterThan("elos.$timeControl", userElo).count()
+                    .get(AggregateSource.SERVER).await().count
 
             // User's rank is higherEloCount + 1
             val rank = higherEloCount.toInt() + 1

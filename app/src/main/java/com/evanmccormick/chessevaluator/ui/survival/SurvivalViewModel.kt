@@ -1,7 +1,8 @@
-package com.evanmccormick.chessevaluator.ui.evaluation
+package com.evanmccormick.chessevaluator.ui.survival
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.evanmccormick.chessevaluator.ui.evaluation.TimeControl
 import com.evanmccormick.chessevaluator.ui.settings.EvalType
 import com.evanmccormick.chessevaluator.ui.theme.AppSettingsController
 import com.evanmccormick.chessevaluator.ui.utils.db.DatabaseManager
@@ -19,33 +20,27 @@ import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.exp
 import kotlin.math.ln
-import kotlin.math.pow
+import kotlin.math.max
 
-// Elo Calculation Constants
-private const val ELO_ERROR_OFFSET = 0.18f
-private const val ELO_MERIT_BONUS = 0.1f
-private const val ELO_K_FACTOR = 100.0
-private const val ELO_SCALE_FACTOR = 400.0
-
-data class EvalSettings(
-    val updateElo: Boolean,
+data class SurvivalSettings(
+    val evalType: EvalType,
     val darkMode: Boolean,
 )
 
-data class EvaluationState(
+data class SurvivalState(
     val pos: Position,
     val userEvaluation: Float,
     val hasSubmitted: Boolean,
     val isLoading: Boolean,
-    val userElo: Int,
-    val eloTransfer: Int,
-    val settings: EvalSettings,
+    val currentHealth: Int,
+    val positionsEvaluated: Int,
+    val gameOver: Boolean = false,
+    val settings: SurvivalSettings,
 )
 
-class EvaluationViewModel : ViewModel() {
-
-    private val _evaluationState = MutableStateFlow(
-        EvaluationState(
+class SurvivalViewModel : ViewModel() {
+    private val _survivalState = MutableStateFlow(
+        SurvivalState(
             pos = Position(
                 id = "",
                 fen = "",
@@ -53,18 +48,19 @@ class EvaluationViewModel : ViewModel() {
                 elo = 1500,
                 tags = emptyList()
             ),
-            userEvaluation = 0f, //Not necessary in state?
+            userEvaluation = 0f,
             hasSubmitted = false,
             isLoading = true,
-            userElo = 1500,
-            eloTransfer = 0,
-            settings = EvalSettings(
-                updateElo = AppSettingsController.updateElo.value,
-                darkMode = AppSettingsController.isDarkTheme.value
+            currentHealth = 1000,
+            positionsEvaluated = 0,
+            gameOver = false,
+            settings = SurvivalSettings(
+                evalType = AppSettingsController.evalType.value,
+                darkMode = AppSettingsController.isDarkTheme.value,
             )
         )
     )
-    val evaluationState: StateFlow<EvaluationState> = _evaluationState.asStateFlow()
+    val survivalState: StateFlow<SurvivalState> = _survivalState.asStateFlow()
 
     // Database Handling
     private val auth = FirebaseAuth.getInstance()
@@ -101,7 +97,7 @@ class EvaluationViewModel : ViewModel() {
                 _timerRemaining.value = _timerRemaining.value - 1
 
                 // When timer reaches zero, auto-submit if not already submitted
-                if (_timerRemaining.value == 0 && !_evaluationState.value.hasSubmitted) {
+                if (_timerRemaining.value == 0 && !survivalState.value.hasSubmitted) {
                     evaluatePosition()
                 }
             }
@@ -110,7 +106,7 @@ class EvaluationViewModel : ViewModel() {
 
     // Update the slider position and sync with text field
     fun updateSliderPosition(position: Float) {
-        _evaluationState.update { currentState ->
+        _survivalState.update { currentState ->
             val clampedPosition = position.coerceIn(0.001f, 0.999f)
             val sideToMove = getSideToMove(currentState.pos.fen)
             val userEval = sigmoidToEval(clampedPosition, sideToMove)
@@ -131,13 +127,8 @@ class EvaluationViewModel : ViewModel() {
 
     fun evalToSigmoid(value: Float, sideToMove: Side, squish: Float = 0.5f): Float {
         // Sigmoid function: 1 / (1 + e^(-x)). Squish shrinks the output range relative to the Eval input
-        val result = (1f / (
-                1f + exp(
-                    -(
-                            (if (sideToMove == Side.BLACK) -value else value
-                                    ) * squish).toDouble()
-                )
-                )).toFloat()
+        val result =
+            (1f / (1f + exp(-((if (sideToMove == Side.BLACK) -value else value) * squish).toDouble()))).toFloat()
 
         // Optional: ensure output is strictly in [0,1]
         return result.coerceIn(0.001f, 0.999f)
@@ -160,107 +151,59 @@ class EvaluationViewModel : ViewModel() {
     // Loads the position info of a random position from the Firebase Firestore API
     fun loadPositionFromApi() {
         viewModelScope.launch {
-            _evaluationState.update { currentState ->
+            _survivalState.update { currentState ->
                 currentState.copy(isLoading = true)
             }
             try {
+                val centerpoint = 1250 + (20 * survivalState.value.positionsEvaluated)
+                val minElo = centerpoint - 100
+                val maxElo = centerpoint + 100
+                val pos = dbManager.getPositionInEloRange(minElo, maxElo, timeControl.durationSeconds)
 
-                val pos = dbManager.getRandomPosition(timeControl.durationSeconds)
-
-                _evaluationState.update { currentState ->
+                _survivalState.update { currentState ->
                     currentState.copy(
                         pos = pos,
                         isLoading = false,
                         userEvaluation = 0f,
-                        hasSubmitted = false,
+                        hasSubmitted = false
                     )
                 }
             } catch (e: Exception) {
-                _evaluationState.update { it.copy(isLoading = false) }
+                _survivalState.update { it.copy(isLoading = false) }
             } finally {
                 resetTimer()
             }
         }
     }
 
-    fun loadUserEloFromApi() {
-        viewModelScope.launch {
-            val elo = dbManager.getUserElo(timeControl.durationSeconds)
-            _evaluationState.update { currentState ->
-                currentState.copy(
-                    userElo = elo
-                )
-            }
-        }
-    }
+    fun getHealthLost() : Int {
+        // Calculate health loss based on evaluation difference
+        val sideToMove = getSideToMove(survivalState.value.pos.fen)
+        val sliderEval = evalToSigmoid(survivalState.value.pos.eval, sideToMove)
+        val userSliderEval = evalToSigmoid(survivalState.value.userEvaluation, sideToMove)
 
-    // Calculate elo transfer based on user's guess, returns position's change in Elo
-    fun calculateEloTransfer(
-        userElo: Int,
-        positionElo: Int,
-        evaluationDifferenceSigmoid: Float
-    ): Int {
-        fun multiplier(ratingA: Int, ratingB: Int): Double {
-            return 1.0 / (1.0 + 10.0.pow((ratingB - ratingA) / ELO_SCALE_FACTOR))
-        }
+        val evalDiffSigmoid = abs(userSliderEval - sliderEval)
 
-        val error = evaluationDifferenceSigmoid - ELO_ERROR_OFFSET
-        val merit = ELO_MERIT_BONUS
-        val k = ELO_K_FACTOR
-        var multiplier = 0.0
-        if (error > 0) {
-            multiplier = multiplier(userElo, positionElo)
-            return ((multiplier * (error + merit) * k).toInt())
-        } else {
-            multiplier = multiplier(positionElo, userElo)
-            return ((multiplier * (error - merit) * k).toInt())
-        }
+        val error = max(evalDiffSigmoid - 0.125f, 0f)
+
+        // Health loss formula: Scale based on difference
+        return (error * 1000).toInt()
     }
 
     fun evaluatePosition() {
         // Stop the timer when evaluation is submitted
         timerJob?.cancel()
 
-        //Only update elo if ranked mode is on
-        if (evaluationState.value.settings.updateElo) {
+        val newHealth = (survivalState.value.currentHealth - getHealthLost()).coerceAtLeast(0)
+        val gameOver = newHealth <= 0
 
-            // Calculate the elo transfer based on the user's guess
-            val sideToMove = getSideToMove(evaluationState.value.pos.fen)
-            val sliderEval = evalToSigmoid(evaluationState.value.pos.eval, sideToMove)
-            val userSliderEval = evalToSigmoid(evaluationState.value.userEvaluation, sideToMove)
-            val evalDiffSigmoid = abs(userSliderEval - sliderEval)
-
-            // Update the position's elo, and the user's elo
-            val eloTransfer = calculateEloTransfer(
-                evaluationState.value.userElo,
-                evaluationState.value.pos.elo,
-                evalDiffSigmoid
-            )
-            val newUserElo = evaluationState.value.userElo - eloTransfer
-            val newPosElo = evaluationState.value.pos.elo + eloTransfer
-            val posId = evaluationState.value.pos.id
-
-            viewModelScope.launch {
-                dbManager.updatePositionElo(posId, newPosElo, timeControl.durationSeconds)
-                dbManager.updateUserElo(newUserElo, timeControl.durationSeconds)
-            }
-
-            // Update the evaluation state with the new Elo values
-            _evaluationState.update { currentState ->
-                currentState.copy(
-                    pos = currentState.pos.copy(
-                        elo = newPosElo
-                    ),
-                    userElo = newUserElo,
-                    eloTransfer = eloTransfer,
-                )
-            }
-        }
-
-        // Set hasSubmitted to true
-        _evaluationState.update { currentState ->
+        // Update state
+        _survivalState.update { currentState ->
             currentState.copy(
-                hasSubmitted = true
+                hasSubmitted = true,
+                currentHealth = newHealth,
+                positionsEvaluated = currentState.positionsEvaluated + 1,
+                gameOver = gameOver
             )
         }
     }
@@ -270,13 +213,26 @@ class EvaluationViewModel : ViewModel() {
         loadPositionFromApi()
     }
 
-    override fun onCleared() {
-        super.onCleared()
-        timerJob?.cancel()
+    fun restartGame() {
+        _survivalState.update { currentState ->
+            currentState.copy(
+                userEvaluation = 0f,
+                hasSubmitted = false,
+                currentHealth = 1000,
+                positionsEvaluated = 0,
+                gameOver = false
+            )
+        }
+        loadPositionFromApi()
     }
 
     fun getSideToMove(fen: String): Side {
         if (fen.isBlank()) return Side.WHITE
         return if (fen.split(" ")[1] == "w") Side.WHITE else Side.BLACK
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        timerJob?.cancel()
     }
 }

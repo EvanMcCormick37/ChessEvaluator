@@ -1,6 +1,8 @@
 package com.evanmccormick.chessevaluator.ui.evaluation.components
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
@@ -23,7 +25,7 @@ fun HeaderContent(
     evaluationState: EvaluationState,
     viwModel: EvaluationViewModel,
     sideToMove: Side
-){
+) {
     val evalExplanation = remember { viwModel.getEvalExplanation(evaluationState.pos.eval) }
     val sideToMoveText = if (sideToMove == Side.WHITE) "White" else "Black"
     val evaluationDifference = abs(evaluationState.userEvaluation - evaluationState.pos.eval)
@@ -34,44 +36,42 @@ fun HeaderContent(
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-            if (evaluationState.hasSubmitted) {
-                // Show evaluation result after submission
-                Text(
-                    text = "${evalExplanation}, ${evaluationState.pos.eval}.",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-
-                Text(
-                    text = "Your evaluation: ${String.format("%.2f",evaluationState.userEvaluation)}",
-                    fontSize = 16.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                Text(
-                    text = if (evaluationDifference > 0) "You were off by ${String.format("%.2f", evaluationDifference)}." else "You are correct!",
-                    fontSize = 16.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = "Position Id: ${evaluationState.pos.id}",
-                    fontSize = 16.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            } else {
-                // Show instructions before submission
-                Text(
-                    text = "$sideToMoveText to move.",
-                    fontSize = 24.sp,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-                Text(
-                    text = "What do you think the evaluation is?",
-                    textAlign = TextAlign.Center,
-                    fontSize = 16.sp,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-            }
+        if (evaluationState.hasSubmitted) {
+            // Show evaluation result after submission
+            Text(
+                text = "${evalExplanation}, ${evaluationState.pos.eval}.",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+            Text(
+                text = "Your evaluation: ${
+                    String.format(
+                        "%.2f",
+                        evaluationState.userEvaluation
+                    )
+                }. You were off by ${
+                    String.format(
+                        "%.2f",
+                        evaluationDifference
+                    )
+                }.",
+                fontSize = 16.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        } else {
+            // Show instructions before submission
+            Text(
+                text = "$sideToMoveText to move.",
+                fontSize = 24.sp,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+            Text(
+                text = "What do you think the evaluation is?",
+                textAlign = TextAlign.Center,
+                fontSize = 16.sp,
+                color = MaterialTheme.colorScheme.onBackground
+            )
         }
+    }
 }

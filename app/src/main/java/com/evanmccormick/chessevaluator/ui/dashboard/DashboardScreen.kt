@@ -7,9 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 
 @Composable
@@ -20,6 +18,7 @@ fun DashboardScreen(
     LaunchedEffect(key1 = true){
         viewModel.navigationEvent.collect { destination ->
             when (destination) {
+                is DashboardViewModel.NavigationDestination.Survival -> navController.navigate("survival_screen/${destination.timeControlDuration}")
                 is DashboardViewModel.NavigationDestination.Eval -> navController.navigate("eval_screen/${destination.timeControlDuration}")
                 is DashboardViewModel.NavigationDestination.Leaderboard -> navController.navigate("leaderboard_screen")
                 is DashboardViewModel.NavigationDestination.Settings -> navController.navigate("settings_screen")
@@ -42,7 +41,12 @@ fun DashboardScreen(
             EvalButton(
                 text = "Play",
                 onClick = { selectedTimeControl ->
-                    viewModel.navigateToEvalWithTimeControl(selectedTimeControl) }
+                    viewModel.navigateWithTimeControlTo(DashboardViewModel.NavigationDestination::Eval, selectedTimeControl) }
+            )
+            EvalButton(
+                text = "Survival Mode",
+                onClick = { selectedTimeControl ->
+                    viewModel.navigateWithTimeControlTo(DashboardViewModel.NavigationDestination::Survival, selectedTimeControl) }
             )
 
             Spacer(modifier = Modifier.height(32.dp))

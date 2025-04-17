@@ -31,6 +31,8 @@ import com.evanmccormick.chessevaluator.ui.profile.StatsScreen
 import com.evanmccormick.chessevaluator.ui.profile.StatsViewModel
 import com.evanmccormick.chessevaluator.ui.settings.SettingsViewModel
 import com.evanmccormick.chessevaluator.ui.settings.SettingsScreen
+import com.evanmccormick.chessevaluator.ui.survival.SurvivalScreen
+import com.evanmccormick.chessevaluator.ui.survival.SurvivalViewModel
 import com.evanmccormick.chessevaluator.ui.theme.AppSettingsController
 import com.evanmccormick.chessevaluator.ui.theme.ChessEvaluatorTheme
 
@@ -91,6 +93,22 @@ fun AppNavigation() {
             EvaluationScreen(
                 navController,
                 viewModel = evaluationViewModel
+            )
+        }
+        composable("survival_screen/{timeControlDuration}",
+            arguments = listOf(navArgument("timeControlDuration") { type = NavType.IntType })
+        ){ backStackEntry ->
+            val timeControlDuration = backStackEntry.arguments?.getInt("timeControlDuration")
+            val survivalViewModel: SurvivalViewModel = viewModel()
+            LaunchedEffect(Unit) {
+                val timeControl = TimeControl.allOptions.find {
+                    it.durationSeconds == timeControlDuration
+                }
+                survivalViewModel.setTimeControl(timeControl!!)
+            }
+            SurvivalScreen(
+                navController,
+                viewModel = survivalViewModel
             )
         }
 //        composable("review_screen"){

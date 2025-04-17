@@ -11,14 +11,15 @@ import androidx.compose.ui.unit.dp
 import com.evanmccormick.chessevaluator.ui.theme.ExtendedTheme
 import androidx.compose.ui.graphics.Color
 import com.github.bhlangonijr.chesslib.Side
+import kotlin.math.abs
 
 @Composable
 fun PostSubmitSlider(
     minEval: Float,
-    evalDifference: Float,
     maxEval: Float,
     sideToMove: Side
 ) {
+    val evalDifference = abs(maxEval - minEval)
     // Evaluation graph
     Box(
         modifier = Modifier
