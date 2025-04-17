@@ -48,7 +48,7 @@ fun EvaluationContent(
     val evaluationState by viewModel.evaluationState.collectAsState()
     val timerRemaining by viewModel.timerRemaining.collectAsState()
     val scrollState = rememberScrollState()
-    val sideToMove = remember { viewModel.getSideToMove(evaluationState.pos.fen) }
+    val sideToMove = viewModel.getSideToMove(evaluationState.pos.fen)
 
     Column(
         modifier = Modifier
