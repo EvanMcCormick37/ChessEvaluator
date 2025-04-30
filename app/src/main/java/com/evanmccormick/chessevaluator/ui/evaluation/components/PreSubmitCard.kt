@@ -75,13 +75,6 @@ fun PreSubmitCard(
                 .padding(horizontal = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = "Time Remaining",
-                color = MaterialTheme.colorScheme.onBackground,
-                fontSize = 16.sp,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-
             Card(
                 modifier = Modifier
                     .padding(bottom = 16.dp)

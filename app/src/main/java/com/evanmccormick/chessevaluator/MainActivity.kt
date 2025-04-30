@@ -27,10 +27,12 @@ import com.evanmccormick.chessevaluator.ui.evaluation.EvaluationViewModel
 import com.evanmccormick.chessevaluator.ui.evaluation.TimeControl
 import com.evanmccormick.chessevaluator.ui.leaderboard.LeaderboardViewModel
 import com.evanmccormick.chessevaluator.ui.leaderboard.LeaderboardScreen
+import com.evanmccormick.chessevaluator.ui.leaderboard.SurvivalLeaderboardViewModel
 import com.evanmccormick.chessevaluator.ui.profile.StatsScreen
 import com.evanmccormick.chessevaluator.ui.profile.StatsViewModel
 import com.evanmccormick.chessevaluator.ui.settings.SettingsViewModel
 import com.evanmccormick.chessevaluator.ui.settings.SettingsScreen
+import com.evanmccormick.chessevaluator.ui.survival.SurvivalLeaderboardScreen
 import com.evanmccormick.chessevaluator.ui.survival.SurvivalScreen
 import com.evanmccormick.chessevaluator.ui.survival.SurvivalViewModel
 import com.evanmccormick.chessevaluator.ui.theme.AppSettingsController
@@ -130,6 +132,13 @@ fun AppNavigation() {
             LeaderboardScreen(
                 navController,
                 leaderboardViewModel
+            )
+        }
+        composable("survival_leaderboard_screen") {
+            val survivalLeaderboardViewModel: SurvivalLeaderboardViewModel = viewModel()
+            SurvivalLeaderboardScreen(
+                navController,
+                survivalLeaderboardViewModel
             )
         }
         composable("settings_screen"){

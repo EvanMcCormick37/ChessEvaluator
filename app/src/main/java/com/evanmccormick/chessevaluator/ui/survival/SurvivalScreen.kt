@@ -2,11 +2,22 @@ package com.evanmccormick.chessevaluator.ui.survival
 
 import ResultsView
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -19,12 +30,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.evanmccormick.chessevaluator.ui.evaluation.EvaluationContent
 import com.evanmccormick.chessevaluator.ui.evaluation.components.AnalysisBoard
 import com.evanmccormick.chessevaluator.ui.evaluation.components.PreSubmitCard
 import com.evanmccormick.chessevaluator.utils.navigation.ScreenWithNavigation
 import com.github.bhlangonijr.chesslib.Side
-import kotlin.math.abs
 
 const val MAX_HEALTH = 1000
 
@@ -41,13 +50,17 @@ fun SurvivalScreen(
         navController,
         currentRoute = "eval_screen"
     ) {
-        SurvivalContent(viewModel = viewModel)
+        SurvivalContent(
+            viewModel = viewModel,
+            navController = navController,
+            )
     }
 }
 
 @Composable
 fun SurvivalContent(
-    viewModel: SurvivalViewModel
+    viewModel: SurvivalViewModel,
+    navController: NavController,
 ) {
     val survivalState by viewModel.survivalState.collectAsState()
     val timerRemaining by viewModel.timerRemaining.collectAsState()
@@ -55,7 +68,6 @@ fun SurvivalContent(
 
     val sideToMove = viewModel.getSideToMove(survivalState.pos.fen)
     val evalExplanation = viewModel.getEvalExplanation(survivalState.pos.eval)
-    val evaluationDifference = abs(survivalState.userEvaluation - survivalState.pos.eval)
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -86,17 +98,11 @@ fun SurvivalContent(
                     color = MaterialTheme.colorScheme.onBackground
                 )
 
-            } else {
-                Text(
-                    text = "$evalExplanation, ${survivalState.pos.eval}.",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
             }
 
             // Chess board
             AnalysisBoard(fen = survivalState.pos.fen)
+
 
             if (!survivalState.hasSubmitted) {
                 PreSubmitCard(
@@ -109,6 +115,14 @@ fun SurvivalContent(
                     onGuess = { viewModel.evaluatePosition() },
                 )
             } else {
+                Text(
+                    text = "$evalExplanation, ${survivalState.pos.eval}.",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
                 // Results view
                 ResultsView(
                     sideToMove,
@@ -129,7 +143,8 @@ fun SurvivalContent(
             } else {
                 GameOverView(
                     positionsEvaluated = survivalState.positionsEvaluated,
-                    onRestart = { viewModel.restartGame() }
+                    onRestart = { viewModel.restartGame() },
+                    navController = navController,
                 )
             }
         }
@@ -149,7 +164,7 @@ fun HealthBar(
             .fillMaxWidth()
             .height(32.dp)
             .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(4.dp))
-            .padding(2.dp)
+            .padding(10.dp)
     ) {
         // Health remaining
         Box(
@@ -162,7 +177,7 @@ fun HealthBar(
                         healthPercentage > 0.3f -> Color.Yellow
                         else -> Color.Red
                     },
-                    RoundedCornerShape(2.dp)
+                    RoundedCornerShape(4.dp)
                 )
         )
     }
@@ -176,8 +191,12 @@ fun HealthBar(
 @Composable
 fun GameOverView(
     positionsEvaluated: Int,
-    onRestart: () -> Unit
+    onRestart: () -> Unit,
+    navController: NavController,
 ) {
+    // Calculate score using the same formula as in the ViewModel
+    val score = positionsEvaluated - 1
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -190,32 +209,47 @@ fun GameOverView(
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground
         )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
         Text(
-            text = "Final Score: ${positionsEvaluated - 1}",
-            fontSize = 18.sp,
+            text = "Final Score: ${score}",
+            fontSize = 22.sp,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground
+            color = MaterialTheme.colorScheme.primary
         )
+
+        Spacer(modifier = Modifier.height(24.dp))
 
         // Restart Button
         Button(
             onClick = onRestart,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 16.dp),
+                .padding(vertical = 8.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.primary
             )
         ) {
             Text(text = "Play Again")
         }
+
+        // View Leaderboard Button
+        Button(
+            onClick = {
+                navController.navigate("survival_leaderboard_screen"){
+                    launchSingleTop = true
+                    restoreState = true
+                } },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+            )
+        ) {
+            Text(text = "View Leaderboard")
+        }
     }
-}
-
-@Composable
-fun HeaderContent(
-    survivalState: SurvivalState,
-    sideToMove: Side
-) {
-
 }

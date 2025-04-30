@@ -1,5 +1,7 @@
 package com.evanmccormick.chessevaluator.ui.dashboard
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -9,6 +11,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.net.toUri
 
 @Composable
 fun DashboardScreen(
@@ -21,11 +25,13 @@ fun DashboardScreen(
                 is DashboardViewModel.NavigationDestination.Survival -> navController.navigate("survival_screen/${destination.timeControlDuration}")
                 is DashboardViewModel.NavigationDestination.Eval -> navController.navigate("eval_screen/${destination.timeControlDuration}")
                 is DashboardViewModel.NavigationDestination.Leaderboard -> navController.navigate("leaderboard_screen")
+                is DashboardViewModel.NavigationDestination.SurvivalLeaderboard -> navController.navigate("survival_leaderboard_screen")
                 is DashboardViewModel.NavigationDestination.Settings -> navController.navigate("settings_screen")
                 is DashboardViewModel.NavigationDestination.Donate -> navController.navigate("donate_screen")
             }
         }
     }
+    val context = LocalContext.current
 
     Box(
         modifier = Modifier
@@ -44,7 +50,7 @@ fun DashboardScreen(
                     viewModel.navigateWithTimeControlTo(DashboardViewModel.NavigationDestination::Eval, selectedTimeControl) }
             )
             EvalButton(
-                text = "Survival Mode",
+                text = "Survival",
                 onClick = { selectedTimeControl ->
                     viewModel.navigateWithTimeControlTo(DashboardViewModel.NavigationDestination::Survival, selectedTimeControl) }
             )
@@ -70,7 +76,19 @@ fun DashboardScreen(
                             containerColor = MaterialTheme.colorScheme.secondaryContainer
                         )
                     ) {
-                        Text(text = "Leaderboard")
+                        Text(text = "Eval Leaderboard")
+                    }
+                    Button(
+                        onClick = { viewModel.navigateTo(DashboardViewModel.NavigationDestination.SurvivalLeaderboard) },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(60.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer
+                        )
+                    ) {
+                        Text(text = "Survival Leaderboard")
                     }
                 }
 
@@ -92,7 +110,12 @@ fun DashboardScreen(
                     }
 
                     Button(
-                        onClick = { viewModel.navigateTo(DashboardViewModel.NavigationDestination.Donate) },
+                        onClick = {
+                            // Launch the intent to open your Ko-fi page
+                            val intent = Intent(Intent.ACTION_VIEW,
+                                "https://ko-fi.com/B0B81E9CGS".toUri())
+                            context.startActivity(intent)
+                        },
                         modifier = Modifier
                             .weight(1f)
                             .height(60.dp),

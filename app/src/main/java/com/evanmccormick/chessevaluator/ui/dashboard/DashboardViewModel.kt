@@ -35,6 +35,7 @@ class DashboardViewModel : ViewModel() {
         data class Eval(val timeControlDuration: Int) : NavigationDestination()
         data class Survival(val timeControlDuration: Int) : NavigationDestination()
         object Leaderboard : NavigationDestination()
+        object SurvivalLeaderboard : NavigationDestination()
         object Settings : NavigationDestination()
         object Donate : NavigationDestination()
     }

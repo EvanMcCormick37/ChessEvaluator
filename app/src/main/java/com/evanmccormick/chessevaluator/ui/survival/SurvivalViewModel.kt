@@ -190,6 +190,23 @@ class SurvivalViewModel : ViewModel() {
         return (error * 1000).toInt()
     }
 
+    fun saveScoreToLeaderboard() {
+
+        viewModelScope.launch {
+            try {
+                val score = survivalState.value.positionsEvaluated - 1
+
+                dbManager.updateUserSurvivalScore(
+                    score = score,
+                    timeControl = timeControl.durationSeconds
+                )
+            } catch (e: Exception) {
+                // Log error but don't show to user
+                println("Error saving survival score: ${e.message}")
+            }
+        }
+    }
+
     fun evaluatePosition() {
         // Stop the timer when evaluation is submitted
         timerJob?.cancel()
@@ -205,6 +222,10 @@ class SurvivalViewModel : ViewModel() {
                 positionsEvaluated = currentState.positionsEvaluated + 1,
                 gameOver = gameOver
             )
+        }
+
+        if (survivalState.value.gameOver) {
+            saveScoreToLeaderboard()
         }
     }
 

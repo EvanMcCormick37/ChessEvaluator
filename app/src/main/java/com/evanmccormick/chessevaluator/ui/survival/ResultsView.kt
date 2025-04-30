@@ -37,30 +37,25 @@ fun ResultsView(
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+
         PostSubmitSlider(
             minEval,
             maxEval,
             sideToMove
         )
-        Text(
-            text = "Your evaluation: ${
-                String.format(
-                    "%.2f",
-                    userEvaluation
-                )
-            }",
-            fontSize = 16.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            text = "You were off by ${String.format("%.2f", evaluationDifference)}.",
-            fontSize = 16.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
+//        Text(
+//            text = "Your evaluation: ${
+//                String.format(
+//                    "%.2f",
+//                    userEvaluation
+//                )
+//            }, You were off by ${String.format("%.2f", evaluationDifference)}.",
+//            fontSize = 16.sp,
+//            color = MaterialTheme.colorScheme.onSurfaceVariant
+//        )
         Text(
             text = "You lost $healthLost hp.",
-            fontSize = 16.sp,
+            fontSize = 20.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
