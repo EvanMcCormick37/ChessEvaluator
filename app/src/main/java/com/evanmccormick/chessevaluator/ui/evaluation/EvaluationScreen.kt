@@ -49,9 +49,7 @@ fun EvaluationContent(
     val timerRemaining by viewModel.timerRemaining.collectAsState()
     val scrollState = rememberScrollState()
     val sideToMove = viewModel.getSideToMove(evaluationState.pos.fen)
-
-    val trueSliderEvaluation =
-        remember { viewModel.evalToSigmoid(evaluationState.pos.eval, sideToMove) }
+    val trueSliderEvaluation = viewModel.evalToSigmoid(evaluationState.pos.eval, sideToMove)
 
     Column(
         modifier = Modifier

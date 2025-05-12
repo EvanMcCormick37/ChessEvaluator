@@ -46,7 +46,6 @@ class DatabaseManager @Inject constructor(
 
             val username = when {
                 !user.displayName.isNullOrBlank() -> user.displayName
-                user.email != null -> user.email!!.substringBefore('@')
                 else -> "User_${uid.take(6)}"
             }
 
@@ -166,7 +165,7 @@ class DatabaseManager @Inject constructor(
         db.collection("positions").document(id).update(fieldPath, newElo).await()
     }
 
-    suspend fun getRandomPosition(timeControl: Int, size: Int = 9300): Position {
+    suspend fun getRandomPosition(timeControl: Int, size: Int = 481): Position {
         val positionsRef = db.collection("positions")
 
         val randomIndex = Random.nextInt(0, size)

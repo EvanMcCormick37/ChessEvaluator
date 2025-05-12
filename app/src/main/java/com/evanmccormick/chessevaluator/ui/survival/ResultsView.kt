@@ -13,8 +13,8 @@ import androidx.compose.ui.unit.sp
 import com.evanmccormick.chessevaluator.ui.evaluation.components.PostSubmitSlider
 import com.github.bhlangonijr.chesslib.Side
 import kotlin.math.abs
-import kotlin.math.min
 import kotlin.math.max
+import kotlin.math.min
 
 @Composable
 fun ResultsView(
@@ -37,29 +37,30 @@ fun ResultsView(
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        Text(
+            text = "Your evaluation: ${
+                String.format(
+                    "%.2f",
+                    userEvaluation
+                )
+            }, You were off by ${String.format("%.2f", evaluationDifference)}.",
+            fontSize = 16.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
 
         PostSubmitSlider(
             minEval,
             maxEval,
             sideToMove
         )
-//        Text(
-//            text = "Your evaluation: ${
-//                String.format(
-//                    "%.2f",
-//                    userEvaluation
-//                )
-//            }, You were off by ${String.format("%.2f", evaluationDifference)}.",
-//            fontSize = 16.sp,
-//            color = MaterialTheme.colorScheme.onSurfaceVariant
-//        )
+
         Text(
             text = "You lost $healthLost hp.",
             fontSize = 20.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
-        if(!gameOver){
+        if (!gameOver) {
             // Continue Button
             Button(
                 onClick = onContinue,

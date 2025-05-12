@@ -116,7 +116,7 @@ class SurvivalViewModel : ViewModel() {
         }
     }
 
-    fun sigmoidToEval(position: Float, sideToMove: Side, stretch: Float = 2f): Float {
+    fun sigmoidToEval(position: Float, sideToMove: Side, stretch: Float = 1f): Float {
         // Prevent division by zero or log of negative number
         val clampedPosition = position.coerceIn(0.001f, 0.999f)
 
@@ -125,7 +125,7 @@ class SurvivalViewModel : ViewModel() {
         return if (sideToMove == Side.WHITE) result else -result
     }
 
-    fun evalToSigmoid(value: Float, sideToMove: Side, squish: Float = 0.5f): Float {
+    fun evalToSigmoid(value: Float, sideToMove: Side, squish: Float = 1f): Float {
         // Sigmoid function: 1 / (1 + e^(-x)). Squish shrinks the output range relative to the Eval input
         val result =
             (1f / (1f + exp(-((if (sideToMove == Side.BLACK) -value else value) * squish).toDouble()))).toFloat()
@@ -158,7 +158,8 @@ class SurvivalViewModel : ViewModel() {
                 val centerpoint = 1250 + (20 * survivalState.value.positionsEvaluated)
                 val minElo = centerpoint - 100
                 val maxElo = centerpoint + 100
-                val pos = dbManager.getPositionInEloRange(minElo, maxElo, timeControl.durationSeconds)
+                val pos = dbManager.getRandomPosition(timeControl.durationSeconds)
+                //TODO: Implement getPositionInEloRange without massive load time
 
                 _survivalState.update { currentState ->
                     currentState.copy(
