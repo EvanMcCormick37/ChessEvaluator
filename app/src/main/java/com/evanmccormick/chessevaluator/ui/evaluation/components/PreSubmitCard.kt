@@ -77,12 +77,6 @@ fun PreSubmitCard(
                 }
             }
 
-            PreSubmitSlider(
-                sideToMove,
-                userSliderPosition,
-                onSliderChange
-            )
-
             // Guess Button
             Button(
                 onClick = onGuess,
@@ -101,6 +95,12 @@ fun PreSubmitCard(
                     style = MaterialTheme.typography.bodyLarge
                 )
             }
+
+            PreSubmitSlider(
+                sideToMove,
+                userSliderPosition,
+                onSliderChange
+            )
         }
     }
 }

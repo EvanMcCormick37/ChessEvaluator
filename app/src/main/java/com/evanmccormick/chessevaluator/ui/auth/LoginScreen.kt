@@ -87,7 +87,7 @@ fun LoginScreen(
             ) {
                 // App Title
                 Text(
-                    text = "Chess Evaluator",
+                    text = "Chess Guessr",
                     fontSize = 32.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary,
