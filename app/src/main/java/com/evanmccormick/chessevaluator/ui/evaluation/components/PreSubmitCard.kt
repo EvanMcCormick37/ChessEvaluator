@@ -10,7 +10,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -45,73 +44,63 @@ fun PreSubmitCard(
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // Timer Display
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Card(
+                    modifier = Modifier
+                        .padding(bottom = 16.dp)
+                        .width(120.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                    ),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    // Format time as MM:SS
+                    val minutes = timerRemaining / 60
+                    val seconds = timerRemaining % 60
+                    val timeString = String.format("%d:%02d", minutes, seconds)
+
+                    Text(
+                        text = timeString,
+                        modifier = Modifier
+                            .padding(vertical = 12.dp)
+                            .fillMaxWidth(),
+                        textAlign = TextAlign.Center,
+                        fontSize = 24.sp,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+            }
+
             PreSubmitSlider(
                 sideToMove,
                 userSliderPosition,
                 onSliderChange
             )
 
-            Surface(
+            // Guess Button
+            Button(
+                onClick = onGuess,
                 modifier = Modifier
-                    .padding(top = 8.dp),
-                shape = RoundedCornerShape(8.dp),
-                color = if(userEvaluation.toFloat() > 0) ExtendedTheme.colors.evaluationWhite else ExtendedTheme.colors.evaluationBlack,
-                tonalElevation = 1.dp
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (userEvaluation.toFloat() > 0) ExtendedTheme.colors.evaluationWhite else ExtendedTheme.colors.evaluationBlack
+                )
             ) {
                 Text(
                     text = evaluationText,
                     modifier = Modifier
                         .padding(horizontal = 16.dp, vertical = 8.dp),
-                    color = if(evaluationText.toFloat() > 0) ExtendedTheme.colors.evaluationBlack else ExtendedTheme.colors.evaluationWhite,
+                    color = if (evaluationText.toFloat() > 0) ExtendedTheme.colors.evaluationBlack else ExtendedTheme.colors.evaluationWhite,
                     style = MaterialTheme.typography.bodyLarge
                 )
             }
-        }
-
-        // Timer Display
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Card(
-                modifier = Modifier
-                    .padding(bottom = 16.dp)
-                    .width(120.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
-                ),
-                shape = RoundedCornerShape(8.dp)
-            ) {
-                // Format time as MM:SS
-                val minutes = timerRemaining / 60
-                val seconds = timerRemaining % 60
-                val timeString = String.format("%d:%02d", minutes, seconds)
-
-                Text(
-                    text = timeString,
-                    modifier = Modifier
-                        .padding(vertical = 12.dp)
-                        .fillMaxWidth(),
-                    textAlign = TextAlign.Center,
-                    fontSize = 24.sp,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            }
-        }
-
-        // Guess Button
-        Button(
-            onClick = onGuess,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = if (darkMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSecondary
-            )
-        ) {
-            Text(text = "Guess")
         }
     }
 }

@@ -1,5 +1,9 @@
 package com.evanmccormick.chessevaluator.ui.evaluation
 
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat.startActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.evanmccormick.chessevaluator.ui.settings.EvalType
@@ -65,6 +69,8 @@ class EvaluationViewModel : ViewModel() {
         )
     )
     val evaluationState: StateFlow<EvaluationState> = _evaluationState.asStateFlow()
+
+    //Context for Link to Lichess
 
     // Database Handling
     private val auth = FirebaseAuth.getInstance()
@@ -216,6 +222,8 @@ class EvaluationViewModel : ViewModel() {
             return ((multiplier * (error - merit) * k).toInt())
         }
     }
+
+
 
     fun evaluatePosition() {
         // Stop the timer when evaluation is submitted

@@ -1,5 +1,7 @@
 package com.evanmccormick.chessevaluator.ui.evaluation.components
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -17,8 +19,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat.startActivity
 import com.evanmccormick.chessevaluator.ui.theme.ExtendedTheme
 import com.evanmccormick.chessevaluator.ui.utils.db.Position
 import com.github.bhlangonijr.chesslib.Side
@@ -40,6 +44,15 @@ fun PostSubmitCard(
     evalToSigmoid: (Float, Side) -> Float,
     onContinue: () -> Unit
 ) {
+
+    val context = LocalContext.current
+
+    fun openLichessAnalysis( fen: String){
+        val formattedFen = fen.replace(" ", "_")
+        val lichessUrl = "https://lichess.org/analysis/$formattedFen"
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(lichessUrl))
+        context.startActivity(intent)
+    }
 
     val userSliderPosition = evalToSigmoid(userEvaluation, sideToMove)
 
@@ -110,19 +123,34 @@ fun PostSubmitCard(
                 }
             }
         }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ){
+            Button(
+                onClick = { openLichessAnalysis(pos.fen) },
+                modifier = Modifier
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+            ) {
+                Text(text = "Analyze on Lichess")
+            }
 
-
-        // Continue Button
-        Button(
-            onClick = onContinue,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = if (darkMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSecondary
-            )
-        ) {
-            Text(text = "Continue")
+            // Continue Button
+            Button(
+                onClick = onContinue,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (darkMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSecondary
+                )
+            ) {
+                Text(text = "Continue")
+            }
         }
     }
 }

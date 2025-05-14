@@ -30,7 +30,7 @@ fun PreSubmitSlider(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(40.dp)
+            .height(80.dp)
             .padding(vertical = 8.dp)
     ) {
         Row(
