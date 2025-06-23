@@ -23,6 +23,27 @@ fun SettingsScreen(
     navController: NavController,
     viewModel: SettingsViewModel
 ) {
+    val settings by viewModel.settings.collectAsState()
+
+    // Handle account deletion navigation
+    LaunchedEffect(settings.accountDeleted) {
+        if (settings.accountDeleted) {
+            navController.navigate("login") {
+                popUpTo(0) { inclusive = true } // Clear entire navigation stack
+            }
+        }
+    }
+
+    // Show delete confirmation dialog
+    if (settings.showDeleteConfirmation) {
+        DeleteAccountConfirmationDialog(
+            isLoading = settings.isDeleteLoading,
+            errorMessage = settings.deleteError,
+            onConfirm = { viewModel.deleteAccount() },
+            onDismiss = { viewModel.hideDeleteConfirmation() },
+            onClearError = { viewModel.clearDeleteError() }
+        )
+    }
     ScreenWithNavigation(
         navController,
         currentRoute = "settings_screen"
@@ -132,9 +153,113 @@ fun SettingsContent(viewModel: SettingsViewModel) {
                 )
             }
 
+            // Account Management Section
+            SettingsSection(title = "Account Management", textColor = textColor) {
+                // Delete Account Button
+                Button(
+                    onClick = { viewModel.showDeleteConfirmation() },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError
+                    ),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        text = "Delete Account",
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+
             Spacer(modifier = Modifier.height(80.dp))
         }
     }
+}
+
+@Composable
+fun DeleteAccountConfirmationDialog(
+    isLoading: Boolean,
+    errorMessage: String?,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+    onClearError: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = { if (!isLoading) onDismiss() },
+        title = {
+            Text(
+                text = "Delete Account",
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.error
+            )
+        },
+        text = {
+            Column {
+                Text(
+                    text = "Are you sure you want to delete your account? This action cannot be undone and will permanently remove:",
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "• All your game statistics and Elo ratings\n• Your leaderboard standings\n• Your user profile and data",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 14.sp
+                )
+
+                if (errorMessage != null) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = errorMessage,
+                        color = MaterialTheme.colorScheme.error,
+                        fontSize = 14.sp
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            if (isLoading) {
+                Box(
+                    modifier = Modifier.padding(16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            } else {
+                TextButton(
+                    onClick = {
+                        if (errorMessage != null) {
+                            onClearError()
+                        } else {
+                            onConfirm()
+                        }
+                    },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text(if (errorMessage != null) "Retry" else "Delete Account")
+                }
+            }
+        },
+        dismissButton = {
+            if (!isLoading) {
+                TextButton(
+                    onClick = onDismiss,
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.onSurface
+                    )
+                ) {
+                    Text("Cancel")
+                }
+            }
+        }
+    )
 }
 
 @Composable

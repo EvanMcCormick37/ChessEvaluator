@@ -23,7 +23,11 @@ data class SettingsState(
     val leaderboardVisible: Boolean = true,
     val darkMode: Boolean = true,
     val evalType: EvalType = EvalType.Raw,
-    val updateElo: Boolean = true
+    val updateElo: Boolean = true,
+    val isDeleteLoading: Boolean = false,
+    val showDeleteConfirmation: Boolean = false,
+    val deleteError: String? = null,
+    val accountDeleted: Boolean = false
 )
 
 class SettingsViewModel : ViewModel() {
@@ -97,6 +101,44 @@ class SettingsViewModel : ViewModel() {
         }
 
         AppSettingsController.setUpdateElo(enabled)
+    }
+
+    // Delete account functions
+    fun showDeleteConfirmation() {
+        _settings.update { it.copy(showDeleteConfirmation = true) }
+    }
+
+    fun hideDeleteConfirmation() {
+        _settings.update { it.copy(showDeleteConfirmation = false, deleteError = null) }
+    }
+
+    fun deleteAccount() {
+        viewModelScope.launch {
+            try {
+                _settings.update { it.copy(isDeleteLoading = true, deleteError = null) }
+
+                dbManager.deleteUser()
+
+                _settings.update {
+                    it.copy(
+                        isDeleteLoading = false,
+                        showDeleteConfirmation = false,
+                        accountDeleted = true
+                    )
+                }
+            } catch (e: Exception) {
+                _settings.update {
+                    it.copy(
+                        isDeleteLoading = false,
+                        deleteError = e.message ?: "Failed to delete account"
+                    )
+                }
+            }
+        }
+    }
+
+    fun clearDeleteError() {
+        _settings.update { it.copy(deleteError = null) }
     }
 
     // Function to save settings to persistent storage (would implement with actual storage)

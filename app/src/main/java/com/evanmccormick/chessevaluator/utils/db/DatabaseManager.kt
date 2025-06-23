@@ -81,6 +81,15 @@ class DatabaseManager @Inject constructor(
         }
     }
 
+    suspend fun deleteUser(): Unit {
+        val user = auth.currentUser
+        user?.let {
+            val uid = user.uid
+            db.collection("users").document(uid).delete().await()
+        }
+        auth.signOut()
+    }
+
     suspend fun getUserInfo(): UserInfo {
         val user = auth.currentUser
         user?.let {
