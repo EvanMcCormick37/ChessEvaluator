@@ -14,19 +14,16 @@ The app consists of six main screens:
    * Load Position from Database
    * Evaluation Slider
    * Evaluate button
-   * Tags.
+   * Tags
    * Shows the correct evaluation and how much user was off by
    * Shows live updated Elo for user and puzzle TODO
    * New Puzzle button (for both screens)
-4. # Profile/Stats (TODO: Connect to Firebase for real data)
-   * Elo history chart
-   * Current Elo
-   * Estimated elo by Puzzle Tags
-5. # Leaderboard (TODO: Connect to Firebase for real data)
+4. # Leaderboard
    * Top players by Elo screen
    * Hardest puzzles by Elo screen (Can try them if you haven't seen them before but only once)
    * Can locate self on leaderboard.
 6. # Settings
-   * Time limit for puzzle solving
+   * Rated or Casual mode (whether puzzle outcomes affect user Elo)
    * Eval type (centi-pawn/win %)
+   * Username
    * Light/Dark theme?
